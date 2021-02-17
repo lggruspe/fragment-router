@@ -41,7 +41,9 @@ export class Router {
   }
 
   route (...fns: Route) {
-    this.routes.push(fns)
+    if (fns) {
+      this.routes.push(fns)
+    }
     return this
   }
 
