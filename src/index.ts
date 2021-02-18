@@ -1,7 +1,6 @@
 export interface Request {
   id: string
   fragment: HTMLElement | null,
-  params: Array<[string, string]>
   done: boolean
   prefix: string
   [key: string]: any
@@ -9,15 +8,9 @@ export interface Request {
 
 function createRequest (prefix = '') {
   const id = window.location.hash.slice(1)
-  const query = window.location.search.slice(1)
-  const params: Array<[string, string]> = []
-  new URLSearchParams(query).forEach((v, k) => {
-    params.push([k, v])
-  })
   const req = {
     id,
     fragment: id ? document.getElementById(id) : null,
-    params,
     done: false,
     prefix: prefix || ''
   }
@@ -72,29 +65,46 @@ export class Router {
         }
       }
     })
+    return this
   }
 }
 
 // Utils
 
-export function isHome (req: Request) {
-  return req.id === '' ? req : null
+export function isHome (done: boolean = false) {
+  return (req: Request) => {
+    if (req.id === '') {
+      return req
+    }
+    req.done ||= done
+  }
 }
 
-export function isNotNull (req: Request) {
-  return req.fragment ? req : null
+export function isNotNull (done: boolean = false) {
+  return (req: Request) => {
+    if (req.fragment) {
+      return req
+    }
+    req.done ||= done
+  }
 }
 
-export function equals (str: string) {
-  return (req: Request) => req.id === str ? req : null
+export function equals (str: string, done: boolean = false) {
+  return (req: Request) => {
+    if (req.id === str) {
+      return req
+    }
+    req.done ||= done
+  }
 }
 
-export function matches (pattern: RegExp) {
+export function matches (pattern: RegExp, done: boolean = false) {
   return (req: Request) => {
     const result = pattern.exec(req.id)
     if (result) {
       req.matched = result
       return req
     }
+    req.done ||= done
   }
 }
