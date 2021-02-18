@@ -1,6 +1,9 @@
 fragment-router
 ===============
 
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/lggruspe/fragment-router/Node.js%20CI)
+![GitHub](https://img.shields.io/github/license/lggruspe/fragment-router)
+
 Fragment router for Typescript/Javascript.
 
 Installation
@@ -14,15 +17,21 @@ Example
 -------
 
 ```typescript
-import { matches, Router } from '@lggruspe/fragment-router'
+import { matches, Request, Router } from '@lggruspe/fragment-router'
 
-function changeColor (color: string) {
-    return (req: Request) => {
-        document.body.style.backgroundColor = color
-        req.done = true
-    }
+function changeBackgroundColor (req: Request) {
+  const color = req.matched?.groups?.color
+  if (color) {
+    document.body.style.backgroundColor = color
+  }
 }
+
+new Router()
+  .route(matches(/^(?<color>[a-z]+)$/), changeBackgroundColor)
+  .listen('color/')
 ```
+
+See `examples/`.
 
 License
 -------
