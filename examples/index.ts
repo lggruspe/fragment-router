@@ -1,29 +1,37 @@
 import {
   equals,
-  isHome,
   matches,
   Request,
   Router
 } from '@lggruspe/fragment-router'
 
-function change (color: string) {
-  return (req: Request) => {
+function changeBackgroundColor (req: Request) {
+  const color = req.matched?.groups?.color
+  if (color) {
     document.body.style.backgroundColor = color
-    req.done = true
   }
+  req.done = true
 }
 
 new Router()
-  .route(isHome, change('pink'))
-  .route(equals('green'), change('green'))
-  .route(matches(/^blue$/), change('blue'))
-  .route(change('yellow'))
+  .route(matches(/^(?<color>[a-z]+)$/), changeBackgroundColor)
   .listen('color/')
 
 new Router()
-  .route(matches(/^user\/(?<user>[a-zA-Z]+)\/post\/(?<post>\d+)$/),
-    (req: Request) => {
-      console.log(req.matched.groups)
-      req.done = true
-    })
+  .route(equals('serif'), req => {
+    document.body.style.fontFamily = 'serif'
+    req.done = true
+  })
+  .route(equals('sans-serif'), req => {
+    document.body.style.fontFamily = 'sans-serif'
+    req.done = true
+  })
+  .route(equals('cursive'), req => {
+    document.body.style.fontFamily = 'cursive'
+    req.done = true
+  })
+  .route(req => {
+    // default
+    document.body.style.fontFamily = 'sans-serif'
+  })
   .listen()
