@@ -6,7 +6,7 @@ export interface Request {
   [key: string]: any
 }
 
-function createRequest (prefix = '') {
+function createRequest (prefix?: string) {
   const id = window.location.hash.slice(1)
   const req = {
     id,
@@ -34,7 +34,7 @@ export class Router {
   }
 
   route (...fns: Route) {
-    if (fns) {
+    if (fns.length > 0) {
       this.routes.push(fns)
     }
     return this

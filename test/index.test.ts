@@ -1,10 +1,14 @@
-import { Router, isHome } from '../src/index'
+import { Router, equals, isHome, isNotNull, matches } from '../src/index'
 import * as assert from 'assert'
 import { JSDOM } from 'jsdom'
 
-async function compare (a: any, b: any) {
+async function wait () {
   // Wait for queued functions (e.g. event listeners) to resolve.
-  await new Promise(resolve => setTimeout(resolve, 0))
+  return await new Promise(resolve => setTimeout(resolve, 0))
+}
+
+async function compare (a: any, b: any) {
+  await wait()
   assert.deepStrictEqual(await a, await b)
 }
 
@@ -47,6 +51,14 @@ describe('Router', () => {
         .route(f, g)
         .route(g, f)
       assert.deepStrictEqual(router.routes, [[f, g], [g, f]])
+    })
+
+    describe('with no input', () => {
+      it('should not push anything to Router.routes', () => {
+        const router = new Router()
+        router.route()
+        assert.deepStrictEqual(router.routes, [])
+      })
     })
   })
 
@@ -232,8 +244,8 @@ describe('utils', () => {
   beforeEach(mockDom)
 
   describe('isHome', () => {
-    describe('empty URL hash', () => {
-      it('should skip remaining routes', async () => {
+    describe('with done = false', () => {
+      it('should skip to the next route if hash is non-empty', async () => {
         const data: Array<string> = []
         new Router()
           .route(isHome(), req => {
@@ -259,11 +271,265 @@ describe('utils', () => {
         await compare(data, ['foo', 'bar', 'bar', 'bar'])
       })
     })
+
+    describe('with done = true', () => {
+      it('should skip all handlers if hash is non-empty', async () => {
+        const data: Array<string> = []
+        new Router()
+          .route(isHome(true), req => {
+            data.push('foo')
+            req.done = true
+          })
+          .route(req => {
+            data.push('bar')
+            req.done = true
+          })
+          .listen()
+
+        window.location.hash = '#'
+        await compare(data, ['foo'])
+
+        window.location.hash = '#foo'
+        await compare(data, ['foo'])
+
+        window.location.hash = '#bar'
+        await compare(data, ['foo'])
+
+        window.location.hash = '#baz'
+        await compare(data, ['foo'])
+      })
+    })
   })
 
   describe('isNotNull', () => {
-    it('should skip remaining', async () => {
+    describe('with done = false', () => {
+      describe('with existing fragment', () => {
+        it('should run remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(isNotNull())
+            .route(req => data.push('foo'))
+            .listen()
 
+          window.location.hash = '#foo'
+          await compare(data, ['foo'])
+        })
+      })
+
+      describe('with non-existent fragment', () => {
+        it('should skip remaining handlers in route but run handlers in other routes', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(isNotNull(), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#non-existent-fragment'
+          await compare(data, ['bar'])
+        })
+      })
+    })
+
+    describe('with done = true', () => {
+      describe('with existing fragment', () => {
+        it('should run remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(isNotNull(true), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#baz'
+          await compare(data, ['foo', 'bar'])
+        })
+      })
+
+      describe('with non-existing fragment', () => {
+        it('should skip all remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(isNotNull(true), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#non-existent-fragment'
+          await compare(data, [])
+        })
+      })
+    })
+  })
+
+  describe('equals', () => {
+    describe('with done = false', () => {
+      describe('if fragment ID equals input string', () => {
+        it('should run remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(equals('foo'), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#foo'
+          await compare(data, ['foo', 'bar'])
+        })
+      })
+
+      describe('if fragment ID does not equal input string', () => {
+        it('should skip to next route', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(equals('foo'), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#bar'
+          await compare(data, ['bar'])
+        })
+      })
+    })
+
+    describe('with done = true', () => {
+      describe('if fragment ID equals input string', () => {
+        it('should run remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(equals('foo', true), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#foo'
+          await compare(data, ['foo', 'bar'])
+        })
+      })
+
+      describe('if no fragment ID equals input string', () => {
+        it('should skip all remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(equals('foo', true), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#baz'
+          await compare(data, [])
+        })
+      })
+    })
+  })
+
+  describe('matches', () => {
+    describe('with done = false', () => {
+      describe('if fragment ID matches pattern', () => {
+        it('should run all remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(matches(/ba/), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#bar'
+          await compare(data, ['foo', 'bar'])
+
+          window.location.hash = '#baz'
+          await compare(data, ['foo', 'bar', 'foo', 'bar'])
+        })
+      })
+
+      describe('if fragment ID does not match pattern', () => {
+        it('should skip to next route', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(matches(/ba/), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#foo'
+          await compare(data, ['bar'])
+        })
+      })
+    })
+
+    describe('with done = true', () => {
+      describe('if fragment ID matches pattern', () => {
+        it('should run all remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(matches(/ba/, true), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#bar'
+          await compare(data, ['foo', 'bar'])
+
+          window.location.hash = '#baz'
+          await compare(data, ['foo', 'bar', 'foo', 'bar'])
+        })
+      })
+
+      describe('if fragment ID does not match pattern', () => {
+        it('should skip all remaining handlers', async () => {
+          const data: Array<string> = []
+          new Router()
+            .route(matches(/ba/, true), req => data.push('foo'))
+            .route(req => data.push('bar'))
+            .listen()
+
+          window.location.hash = '#foo'
+          await compare(data, [])
+        })
+      })
+    })
+
+    describe('with unnamed captures', () => {
+      it('should store matched pattern in req object', async () => {
+        const data: Array<any> = []
+        new Router()
+          .route(matches(/^user\/([a-z]+)\/post\/(\d+)$/, true))
+          .route(req => data.push(req.matched))
+          .listen()
+
+        window.location.hash = '#user/foo/post/'
+        await compare(data, [])
+
+        window.location.hash = '#user/foo/post/0/'
+        await compare(data, [])
+
+        window.location.hash = '#user/foo/post/0'
+        await wait()
+        const matched = data.pop() || []
+        const first = matched[1] || ''
+        const second = matched[2] || ''
+        assert.strictEqual(first, 'foo')
+        assert.strictEqual(second, '0')
+      })
+    })
+
+    describe('with named captures', () => {
+      it('should store matched pattern in req object', async () => {
+        const data: Array<any> = []
+        new Router()
+          .route(matches(/^user\/(?<user>[a-z]+)\/post\/(?<post>\d+)$/, true))
+          .route(req => data.push(req.matched))
+          .listen()
+
+        window.location.hash = '#user/foo/post/'
+        await compare(data, [])
+
+        window.location.hash = '#user/foo/post/0/'
+        await compare(data, [])
+
+        window.location.hash = '#user/foo/post/0'
+        await wait()
+        const matched = data.pop() || []
+        const first = matched[1] || ''
+        const second = matched[2] || ''
+        assert.strictEqual(first, 'foo')
+        assert.strictEqual(second, '0')
+
+        assert.ok(matched.groups)
+        assert.strictEqual(matched.groups.user, 'foo')
+        assert.strictEqual(matched.groups.post, '0')
+      })
     })
   })
 })
