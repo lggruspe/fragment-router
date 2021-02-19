@@ -66,6 +66,16 @@ export class Router {
 
 // Utils
 
+export function guard (fn: (req: Request) => boolean, done: boolean = false) {
+  return (req: Request) => {
+    if (fn(req)) {
+      return req
+    } else {
+      req.done ||= done
+    }
+  }
+}
+
 export function isHome (done: boolean = false) {
   return (req: Request) => {
     if (req.id === '') {
