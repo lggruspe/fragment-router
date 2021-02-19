@@ -7,30 +7,25 @@ export interface Request {
 }
 
 function createRequest (prefix?: string) {
+  prefix ||= ''
   const id = window.location.hash.slice(1)
-  const req = {
-    id,
+  return {
+    id: id.slice(prefix.length),
     fragment: id ? document.getElementById(id) : null,
-    done: false,
-    prefix: prefix || ''
+    done: !id.startsWith(prefix),
+    prefix
   }
-  if (!prefix) {
-    return req
-  }
-  if (!id.startsWith(prefix)) {
-    req.done = true
-    return req
-  }
-  req.id = id.slice(prefix.length)
-  return req
 }
 
-type Route = Array<(req: Request) => any>
+type RequestHandler = (req: Request) => any
+type Route = Array<RequestHandler>
 
 export class Router {
   routes: Array<Route>
+  subrouters: Array<[string, Router]>
   constructor () {
     this.routes = []
+    this.subrouters = []
   }
 
   route (...fns: Route) {
