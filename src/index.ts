@@ -35,6 +35,10 @@ export class Router {
     return this
   }
 
+  mount (prefix: string, subrouter: Router) {
+    this.subrouters.push([prefix, subrouter])
+  }
+
   /// Control flow: callback function stops processing request when
   /// req.done becomes truthy.
   /// Each route is a sequence of functions passed to this.route in
@@ -60,6 +64,9 @@ export class Router {
         }
       }
     })
+    for (const [infix, subrouter] of this.subrouters) {
+      subrouter.listen(prefix + infix)
+    }
     return this
   }
 }

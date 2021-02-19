@@ -32,6 +32,10 @@ describe('Router', () => {
     it('should initially have no routes', () => {
       assert.strictEqual(new Router().routes.length, 0)
     })
+
+    it('should initially have no subrouters', () => {
+      assert.strictEqual(new Router().subrouters.length, 0)
+    })
   })
 
   describe('route', () => {
@@ -59,6 +63,15 @@ describe('Router', () => {
         router.route()
         assert.deepStrictEqual(router.routes, [])
       })
+    })
+  })
+
+  describe('mount', () => {
+    it('should push prefix and subrouter into Router.subrouters', () => {
+      const subrouter = new Router()
+      const router = new Router()
+      router.mount('sub', subrouter)
+      assert.deepStrictEqual(router.subrouters, [['sub', subrouter]])
     })
   })
 
@@ -235,6 +248,39 @@ describe('Router', () => {
         await compare(data, ['foo', 'foo', 'bar'])
         window.location.hash = '#bar/foo/'
         await compare(data, ['foo', 'foo', 'bar', 'bar'])
+      })
+    })
+
+    describe('with subrouters', () => {
+      describe('with subrouter = self', () => {
+        it('should not get stuck in a loop', async () => {
+
+        })
+      })
+
+      it('should run all handlers with the appropriate prefix', async () => {
+        const data: Array<string> = []
+        const baz = new Router().route(() => data.push('baz'))
+        const bar = new Router().route(() => data.push('bar'))
+        const foo = new Router().route(() => data.push('foo'))
+
+        bar.mount('baz/', baz)
+        foo.mount('bar/', bar)
+        foo.listen('foo/')
+
+        window.location.hash = '#baz/'
+        await compare(data, [])
+        window.location.hash = '#bar/'
+        await compare(data, [])
+        window.location.hash = '#foo/'
+        await compare(data, ['foo'])
+
+        window.location.hash = '#foo/bar/'
+        await compare(data, ['foo', 'foo', 'bar'])
+        window.location.hash = '#foo/bar/baz'
+        await compare(data, ['foo', 'foo', 'bar', 'foo', 'bar'])
+        window.location.hash = '#foo/bar/baz/'
+        await compare(data, ['foo', 'foo', 'bar', 'foo', 'bar', 'foo', 'bar', 'baz'])
       })
     })
   })
