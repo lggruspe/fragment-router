@@ -1,4 +1,5 @@
 import {
+  guard,
   equals,
   matches,
   Request,
@@ -14,23 +15,23 @@ function changeBackgroundColor (req: Request) {
 }
 
 new Router()
-  .route(matches(/^(?<color>[a-z]+)$/), changeBackgroundColor)
+  .route(guard(matches(/^(?<color>[a-z]+)$/)), changeBackgroundColor)
   .listen('color/')
 
 new Router()
-  .route(equals('serif'), req => {
+  .route(guard(equals('serif')), req => {
     document.body.style.fontFamily = 'serif'
     req.done = true
   })
-  .route(equals('sans-serif'), req => {
+  .route(guard(equals('sans-serif')), req => {
     document.body.style.fontFamily = 'sans-serif'
     req.done = true
   })
-  .route(equals('cursive'), req => {
+  .route(guard(equals('cursive')), req => {
     document.body.style.fontFamily = 'cursive'
     req.done = true
   })
-  .route(req => {
+  .route(() => {
     // default
     document.body.style.fontFamily = 'sans-serif'
   })
