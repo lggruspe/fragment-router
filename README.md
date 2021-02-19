@@ -2,6 +2,7 @@ fragment-router
 ===============
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/lggruspe/fragment-router/Node.js%20CI)
+[![codecov](https://codecov.io/gh/lggruspe/fragment-router/branch/main/graph/badge.svg?token=PB8FIEUHRE)](https://codecov.io/gh/lggruspe/fragment-router)
 ![GitHub](https://img.shields.io/github/license/lggruspe/fragment-router)
 
 Fragment router for Typescript/Javascript.
@@ -17,7 +18,7 @@ Example
 -------
 
 ```typescript
-import { matches, Request, Router } from '@lggruspe/fragment-router'
+import { guard, matches, Request, Router } from '@lggruspe/fragment-router'
 
 function changeBackgroundColor (req: Request) {
   const color = req.matched?.groups?.color
@@ -27,7 +28,7 @@ function changeBackgroundColor (req: Request) {
 }
 
 new Router()
-  .route(matches(/^(?<color>[a-z]+)$/), changeBackgroundColor)
+  .route(guard(matches(/^(?<color>[a-z]+)$/)), changeBackgroundColor)
   .listen('color/')
 ```
 
