@@ -67,49 +67,37 @@ export class Router {
 // Utils
 
 export function guard (fn: (req: Request) => boolean, done: boolean = false) {
-  return (req: Request) => {
+  return (req: Request): Request | undefined => {
     if (fn(req)) {
       return req
     } else {
       req.done ||= done
+      return undefined
     }
   }
 }
 
-export function isHome (done: boolean = false) {
+export function isHome (req: Request): boolean {
+  return req.id === ''
+}
+
+export function isNotNull (req: Request): boolean {
+  return Boolean(req.fragment)
+}
+
+export function equals (str: string) {
   return (req: Request) => {
-    if (req.id === '') {
-      return req
-    }
-    req.done ||= done
+    return req.id === str
   }
 }
 
-export function isNotNull (done: boolean = false) {
-  return (req: Request) => {
-    if (req.fragment) {
-      return req
-    }
-    req.done ||= done
-  }
-}
-
-export function equals (str: string, done: boolean = false) {
-  return (req: Request) => {
-    if (req.id === str) {
-      return req
-    }
-    req.done ||= done
-  }
-}
-
-export function matches (pattern: RegExp, done: boolean = false) {
+export function matches (pattern: RegExp) {
   return (req: Request) => {
     const result = pattern.exec(req.id)
     if (result) {
       req.matched = result
-      return req
+      return true
     }
-    req.done ||= done
+    return false
   }
 }

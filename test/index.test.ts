@@ -1,4 +1,4 @@
-import { Router, equals, isHome, isNotNull, matches } from '../src/index'
+import { Router, equals, guard, isHome, isNotNull, matches } from '../src/index'
 import * as assert from 'assert'
 import { JSDOM } from 'jsdom'
 
@@ -99,7 +99,7 @@ describe('Router', () => {
                 data.push('foo')
                 return req
               },
-              function (req) {
+              function () {
                 data.push('bar')
               },
               function (req) {
@@ -150,7 +150,7 @@ describe('Router', () => {
           const data: Array<number> = []
           new Router()
             .route(
-              function (req) {
+              function () {
                 data.push(0)
               },
               function (req) {
@@ -248,7 +248,7 @@ describe('utils', () => {
       it('should skip to the next route if hash is non-empty', async () => {
         const data: Array<string> = []
         new Router()
-          .route(isHome(), req => {
+          .route(guard(isHome), req => {
             data.push('foo')
             req.done = true
           })
@@ -276,7 +276,7 @@ describe('utils', () => {
       it('should skip all handlers if hash is non-empty', async () => {
         const data: Array<string> = []
         new Router()
-          .route(isHome(true), req => {
+          .route(guard(isHome, true), req => {
             data.push('foo')
             req.done = true
           })
@@ -307,8 +307,8 @@ describe('utils', () => {
         it('should run remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(isNotNull())
-            .route(req => data.push('foo'))
+            .route(guard(isNotNull))
+            .route(() => data.push('foo'))
             .listen()
 
           window.location.hash = '#foo'
@@ -320,8 +320,8 @@ describe('utils', () => {
         it('should skip remaining handlers in route but run handlers in other routes', async () => {
           const data: Array<string> = []
           new Router()
-            .route(isNotNull(), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(isNotNull), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#non-existent-fragment'
@@ -335,8 +335,8 @@ describe('utils', () => {
         it('should run remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(isNotNull(true), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(isNotNull, true), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#baz'
@@ -348,8 +348,8 @@ describe('utils', () => {
         it('should skip all remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(isNotNull(true), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(isNotNull, true), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#non-existent-fragment'
@@ -365,8 +365,8 @@ describe('utils', () => {
         it('should run remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(equals('foo'), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(equals('foo')), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#foo'
@@ -378,8 +378,8 @@ describe('utils', () => {
         it('should skip to next route', async () => {
           const data: Array<string> = []
           new Router()
-            .route(equals('foo'), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(equals('foo')), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#bar'
@@ -393,8 +393,8 @@ describe('utils', () => {
         it('should run remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(equals('foo', true), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(equals('foo'), true), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#foo'
@@ -406,8 +406,8 @@ describe('utils', () => {
         it('should skip all remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(equals('foo', true), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(equals('foo'), true), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#baz'
@@ -423,8 +423,8 @@ describe('utils', () => {
         it('should run all remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(matches(/ba/), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(matches(/ba/)), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#bar'
@@ -439,8 +439,8 @@ describe('utils', () => {
         it('should skip to next route', async () => {
           const data: Array<string> = []
           new Router()
-            .route(matches(/ba/), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(matches(/ba/)), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#foo'
@@ -454,8 +454,8 @@ describe('utils', () => {
         it('should run all remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(matches(/ba/, true), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(matches(/ba/), true), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#bar'
@@ -470,8 +470,8 @@ describe('utils', () => {
         it('should skip all remaining handlers', async () => {
           const data: Array<string> = []
           new Router()
-            .route(matches(/ba/, true), req => data.push('foo'))
-            .route(req => data.push('bar'))
+            .route(guard(matches(/ba/), true), () => data.push('foo'))
+            .route(() => data.push('bar'))
             .listen()
 
           window.location.hash = '#foo'
@@ -484,7 +484,7 @@ describe('utils', () => {
       it('should store matched pattern in req object', async () => {
         const data: Array<any> = []
         new Router()
-          .route(matches(/^user\/([a-z]+)\/post\/(\d+)$/, true))
+          .route(guard(matches(/^user\/([a-z]+)\/post\/(\d+)$/), true))
           .route(req => data.push(req.matched))
           .listen()
 
@@ -508,7 +508,7 @@ describe('utils', () => {
       it('should store matched pattern in req object', async () => {
         const data: Array<any> = []
         new Router()
-          .route(matches(/^user\/(?<user>[a-z]+)\/post\/(?<post>\d+)$/, true))
+          .route(guard(matches(/^user\/(?<user>[a-z]+)\/post\/(?<post>\d+)$/), true))
           .route(req => data.push(req.matched))
           .listen()
 
