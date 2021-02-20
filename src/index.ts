@@ -35,7 +35,9 @@ export class Router {
   }
 
   mount (prefix: string, subrouter: Router) {
-    this.subrouters.push([prefix, subrouter])
+    if (subrouter !== this) {
+      this.subrouters.push([prefix, subrouter])
+    }
   }
 
   // Control flow: router tries each route/pipeline.

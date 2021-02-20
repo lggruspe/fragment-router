@@ -77,148 +77,137 @@ describe('Router', () => {
       router.mount('sub', subrouter)
       assert.deepStrictEqual(router.subrouters, [['sub', subrouter]])
     })
+
+    describe('with subrouter = this', () => {
+      it('should not be added into Router.subrouters', async () => {
+        const router = new Router()
+        router.mount('', router)
+        router.mount('sub', router)
+        assert.deepStrictEqual(router.subrouters, [])
+      })
+    })
   })
 
   describe('listen', () => {
     beforeEach(mockDom)
 
-    describe('with single route', () => {
-      describe('when req gets returned', () => {
-        it('should run every request handler', async () => {
-          const data: Array<string> = []
-          new Router()
-            .route(
-              function (req) {
-                data.push('foo')
-                return req
-              },
-              function (req) {
-                data.push('bar')
-                return req
-              },
-              function (req) {
-                data.push('baz')
-                return req
-              }
-            )
-            .listen()
-          window.location.hash = '#'
-          await compare(data, ['foo', 'bar', 'baz'])
-        })
-      })
+    it('should use the a single req object for all filters in the same route', async () => {
+      const data: Array<any> = []
+      new Router()
+        .route(
+          req => {
+            data.push(req)
+            return req
+          },
+          req => data.push(req)
+        )
+        .listen()
+      window.location.hash = '#'
 
-      describe('when req does not get returned', () => {
-        it('should stop at handler that fails to return req', async () => {
-          const data: Array<string> = []
-          new Router()
-            .route(
-              function (req) {
-                data.push('foo')
-                return req
-              },
-              function () {
-                data.push('bar')
-              },
-              function (req) {
-                data.push('baz')
-                return req
-              }
-            )
-            .listen()
-          window.location.hash = '#'
-          await compare(data, ['foo', 'bar'])
-        })
+      await wait()
+      assert.strictEqual(data.length, 2)
+      assert.deepStrictEqual(data[0], data[1])
+    })
+
+    it('should create a new req object for each route', async () => {
+      const data: Array<any> = []
+      new Router()
+        .route(req => data.push(req))
+        .route(req => data.push(req))
+        .listen()
+      window.location.hash = '#'
+
+      await wait()
+      assert.strictEqual(data.length, 2)
+      assert.notEqual(data[0], data[1])
+    })
+
+    describe('when req gets returned', () => {
+      it('should run every request handler', async () => {
+        const data: Array<number> = []
+        new Router()
+          .route(
+            function (req) {
+              data.push(0)
+              return req
+            },
+            function (req) {
+              data.push(1)
+              return req
+            }
+          )
+          .route(
+            function (req) {
+              data.push(2)
+              return req
+            },
+            function (req) {
+              data.push(3)
+              return req
+            }
+          )
+          .listen()
+        window.location.hash = '#'
+        await compare(data, [0, 1, 2, 3])
       })
     })
 
-    describe('with multiple routes', () => {
-      describe('when req gets returned', () => {
-        it('should run every request handler', async () => {
-          const data: Array<number> = []
-          new Router()
-            .route(
-              function (req) {
-                data.push(0)
-                return req
-              },
-              function (req) {
-                data.push(1)
-                return req
-              }
-            )
-            .route(
-              function (req) {
-                data.push(2)
-                return req
-              },
-              function (req) {
-                data.push(3)
-                return req
-              }
-            )
-            .listen()
-          window.location.hash = '#'
-          await compare(data, [0, 1, 2, 3])
-        })
+    describe('when req does not get returned', () => {
+      it('should skip to the next route', async () => {
+        const data: Array<number> = []
+        new Router()
+          .route(
+            function () {
+              data.push(0)
+            },
+            function (req) {
+              data.push(1)
+              return req
+            }
+          )
+          .route(
+            function (req) {
+              data.push(2)
+              return req
+            },
+            function (req) {
+              data.push(3)
+              return req
+            }
+          )
+          .listen()
+        window.location.hash = '#'
+        await compare(data, [0, 2, 3])
       })
+    })
 
-      describe('when req does not get returned', () => {
-        it('should skip to the next route', async () => {
-          const data: Array<number> = []
-          new Router()
-            .route(
-              function () {
-                data.push(0)
-              },
-              function (req) {
-                data.push(1)
-                return req
-              }
-            )
-            .route(
-              function (req) {
-                data.push(2)
-                return req
-              },
-              function (req) {
-                data.push(3)
-                return req
-              }
-            )
-            .listen()
-          window.location.hash = '#'
-          await compare(data, [0, 2, 3])
-        })
-      })
-
-      describe('when filter returns HTMLElement', () => {
-        it('should skip all remaining handlers and routes', async () => {
-          const data: Array<number> = []
-          new Router()
-            .route(
-              function () {
-                data.push(0)
-                return done()
-              },
-              function (req) {
-                data.push(1)
-                return req
-              }
-            )
-            .route(
-              function (req) {
-                data.push(2)
-                return req
-              },
-              function (req) {
-                data.push(3)
-                return req
-              }
-            )
-            .listen()
-          window.location.hash = '#'
-          await compare(data, [0])
-        })
+    describe('when filter returns HTMLElement', () => {
+      it('should skip all remaining handlers and routes', async () => {
+        const data: Array<number> = []
+        new Router()
+          .route(
+            function () {
+              data.push(0)
+              return done()
+            },
+            function (req) {
+              data.push(1)
+              return req
+            }
+          )
+          .route(
+            function (req) {
+              data.push(2)
+              return req
+            },
+            function (req) {
+              data.push(3)
+              return req
+            }
+          )
+          .listen()
+        window.location.hash = '#'
+        await compare(data, [0])
       })
     })
 
@@ -255,8 +244,14 @@ describe('Router', () => {
 
     describe('with subrouters', () => {
       describe('with subrouter = self', () => {
-        it('should not get stuck in a loop', async () => {
-          // TODO what happens if a router mounts itself?
+        it('should not get stuck in a loop/cause stack overflow', async () => {
+          const router = new Router()
+          router.mount('', router)
+          router.listen()
+
+          window.location.hash = '#'
+          await wait()
+          assert.ok(true)
         })
       })
 
