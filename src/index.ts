@@ -1,7 +1,6 @@
 export interface Request {
   id: string
   fragment: HTMLElement | null,
-  done: boolean
   prefix: string
   [key: string]: any
 }
@@ -12,7 +11,7 @@ export function currentRequest (prefix?: string) {
   return {
     id: id.slice(prefix.length),
     fragment: id ? document.getElementById(id) : null,
-    done: !id.startsWith(prefix),
+    valid: id.startsWith(prefix),
     prefix
   }
 }
@@ -39,26 +38,24 @@ export class Router {
     this.subrouters.push([prefix, subrouter])
   }
 
-  /// Control flow: callback function stops processing request when
-  /// req.done becomes truthy.
-  /// Each route is a sequence of functions passed to this.route in
-  /// the same call.
-  /// The callback function will call the next function in the route
-  /// if the previous function in the route returns the req object
-  /// back.
-  /// Otherwise, it will skip to the next route.
+  // Control flow: router tries each route/pipeline.
+  // If a route breaks (i.e. a filter fails to return a Request object),
+  // then it tries another route.
+  // The router stops if a filter returns an HTMLElement.
   listen (prefix = '') {
     window.addEventListener('hashchange', () => {
-      const req = currentRequest(prefix)
       for (const route of this.routes) {
-        if (req.done) {
-          break
+        const req = currentRequest(prefix)
+        if (!req.valid) {
+          return
         }
-        for (const fn of route) {
-          if (req.done) {
-            break
+        for (const filter of route) {
+          const res = filter(req)
+          if (res instanceof window.HTMLElement) {
+            /// TODO render result
+            return
           }
-          if (fn(req) !== req) {
+          if (res !== req || !req.valid) {
             break
           }
         }
@@ -73,12 +70,11 @@ export class Router {
 
 // Utils
 
-export function guard (fn: (req: Request) => boolean, done: boolean = false) {
+export function guard (fn: (req: Request) => boolean) {
   return (req: Request): Request | undefined => {
     if (fn(req)) {
       return req
     } else {
-      req.done ||= done
       return undefined
     }
   }
