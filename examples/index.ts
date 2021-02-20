@@ -11,7 +11,12 @@ function changeBackgroundColor (req: Request) {
   if (color) {
     document.body.style.backgroundColor = color
   }
-  req.done = true
+}
+
+function hello () {
+  const p = document.createElement('p')
+  p.textContent = 'Hello, world!'
+  return p
 }
 
 new Router()
@@ -19,20 +24,20 @@ new Router()
   .listen('color/')
 
 new Router()
-  .route(guard(equals('serif')), req => {
+  .route(guard(equals('serif')), () => {
     document.body.style.fontFamily = 'serif'
-    req.done = true
+    return hello()
   })
-  .route(guard(equals('sans-serif')), req => {
+  .route(guard(equals('sans-serif')), () => {
     document.body.style.fontFamily = 'sans-serif'
-    req.done = true
+    return hello()
   })
-  .route(guard(equals('cursive')), req => {
+  .route(guard(equals('cursive')), () => {
     document.body.style.fontFamily = 'cursive'
-    req.done = true
+    return hello()
   })
   .route(() => {
     // default
-    document.body.style.fontFamily = 'sans-serif'
+    return hello()
   })
   .listen()

@@ -22,9 +22,11 @@ type Route = Array<RequestHandler>
 export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
-  constructor () {
+  options: { [key: string]: any }
+  constructor (options = {}) {
     this.routes = []
     this.subrouters = []
+    this.options = options
   }
 
   route (...fns: Route) {
@@ -45,7 +47,11 @@ export class Router {
   // then it tries another route.
   // The router stops if a filter returns an HTMLElement.
   listen (prefix = '') {
+    const virtualFragments: Array<HTMLElement> = []
     window.addEventListener('hashchange', () => {
+      while (virtualFragments.length) {
+        virtualFragments.pop()!.remove()
+      }
       for (const route of this.routes) {
         const req = currentRequest(prefix)
         if (!req.valid) {
@@ -54,7 +60,10 @@ export class Router {
         for (const filter of route) {
           const res = filter(req)
           if (res instanceof window.HTMLElement) {
-            /// TODO render result
+            res.id = req.prefix + req.id
+            virtualFragments.push(res)
+            const container = this.options.container || document.body
+            container.appendChild(res)
             return
           }
           if (res !== req || !req.valid) {

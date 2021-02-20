@@ -1,4 +1,4 @@
-import { currentRequest, Router, equals, guard, isHome, isNotNull, matches, withPrefix } from '../src/index'
+import { Request, currentRequest, Router, equals, guard, isHome, isNotNull, matches, withPrefix } from '../src/index'
 import * as assert from 'assert'
 import { JSDOM } from 'jsdom'
 
@@ -483,6 +483,63 @@ describe('withPrefix', () => {
     it('should not return anything', () => {
       const req = currentRequest()
       assert.ok(!withPrefix('foo')(req))
+    })
+  })
+})
+
+function hello (req: Request) {
+  const div = document.createElement('div')
+  div.textContent = `Hello, ${req.id || 'world'}!`
+  return div
+}
+
+describe('dynamic fragments', () => {
+  beforeEach(mockDom)
+
+  describe('with no specified container in options', () => {
+    it('should insert elements into document.body', async () => {
+      document.body.innerHTML = ''
+      new Router().route(hello).listen()
+
+      window.location.hash = '#foo'
+      await wait()
+
+      const foo = document.body.querySelector('#foo')
+      assert.ok(Boolean(foo))
+      assert.strictEqual(foo?.textContent, 'Hello, foo!')
+
+      window.location.hash = '#bar'
+      await wait()
+
+      assert.ok(!document.body.querySelector('#foo'))
+      const bar = document.body.querySelector('#bar')
+      assert.ok(Boolean(bar))
+      assert.strictEqual(bar?.textContent, 'Hello, bar!')
+    })
+  })
+
+  describe('with container in options', () => {
+    it('should insert elements into container', async () => {
+      document.body.innerHTML = '<div id="test"></div>'
+      const container = document.body.querySelector('#test')
+      new Router({ container }).route(hello).listen()
+
+      window.location.hash = '#foo'
+      await wait()
+
+      const foo = document.body.querySelector('#foo')
+      assert.ok(Boolean(foo))
+      assert.strictEqual(foo?.textContent, 'Hello, foo!')
+      assert.deepStrictEqual(container, foo.parentNode)
+
+      window.location.hash = '#bar'
+      await wait()
+
+      assert.ok(!document.body.querySelector('#foo'))
+      const bar = document.body.querySelector('#bar')
+      assert.ok(Boolean(bar))
+      assert.strictEqual(bar?.textContent, 'Hello, bar!')
+      assert.deepStrictEqual(container, bar.parentNode)
     })
   })
 })
