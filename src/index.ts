@@ -6,7 +6,7 @@ export interface Request {
   [key: string]: any
 }
 
-function createRequest (prefix?: string) {
+export function currentRequest (prefix?: string) {
   prefix ||= ''
   const id = window.location.hash.slice(1)
   return {
@@ -49,7 +49,7 @@ export class Router {
   /// Otherwise, it will skip to the next route.
   listen (prefix = '') {
     window.addEventListener('hashchange', () => {
-      const req = createRequest(prefix)
+      const req = currentRequest(prefix)
       for (const route of this.routes) {
         if (req.done) {
           break
@@ -106,5 +106,18 @@ export function matches (pattern: RegExp) {
       return true
     }
     return false
+  }
+}
+
+export function withPrefix (prefix: string) {
+  return (req: Request) => {
+    if (!prefix) return req
+    if (req.id.startsWith(prefix)) {
+      req.id = req.id.slice(prefix.length)
+      req.prefix += prefix
+      return req
+    } else {
+      return undefined
+    }
   }
 }

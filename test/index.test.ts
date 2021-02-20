@@ -1,4 +1,4 @@
-import { Router, equals, guard, isHome, isNotNull, matches } from '../src/index'
+import { currentRequest, Router, equals, guard, isHome, isNotNull, matches, withPrefix } from '../src/index'
 import * as assert from 'assert'
 import { JSDOM } from 'jsdom'
 
@@ -576,6 +576,36 @@ describe('utils', () => {
         assert.strictEqual(matched.groups.user, 'foo')
         assert.strictEqual(matched.groups.post, '0')
       })
+    })
+  })
+})
+
+describe('withPrefix', () => {
+  beforeEach(mockDom)
+
+  describe('with non-empty prefix', () => {
+    it('should have the same result as calling currentRequest with a prefix', async () => {
+      window.location.hash = '#foo/bar'
+      const expected = currentRequest('foo/')
+      const actual = withPrefix('foo/')(currentRequest())
+
+      await wait()
+      assert.deepStrictEqual(expected, actual)
+    })
+  })
+
+  describe('with empty prefix', () => {
+    it('should not modify input req', () => {
+      const expected = currentRequest()
+      const actual = withPrefix('')(expected)
+      assert.deepStrictEqual(expected, actual)
+    })
+  })
+
+  describe('when prefix does not match id in req', () => {
+    it('should not return anything', () => {
+      const req = currentRequest()
+      assert.ok(!withPrefix('foo')(req))
     })
   })
 })

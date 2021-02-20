@@ -5,7 +5,7 @@ fragment-router
 [![codecov](https://codecov.io/gh/lggruspe/fragment-router/branch/main/graph/badge.svg?token=PB8FIEUHRE)](https://codecov.io/gh/lggruspe/fragment-router)
 ![GitHub](https://img.shields.io/github/license/lggruspe/fragment-router)
 
-Fragment router for Typescript/Javascript.
+Router for dynamically-generated HTML fragments.
 
 Installation
 ------------

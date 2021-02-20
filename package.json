@@ -1,7 +1,7 @@
 {
   "name": "@lggruspe/fragment-router",
   "version": "1.2.0",
-  "description": "Fragment router",
+  "description": "Router for dynamically-generated HTML fragments",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
