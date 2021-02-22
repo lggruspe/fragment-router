@@ -1,16 +1,28 @@
 import { Request, currentRequest } from './request'
 
-type RequestHandler = (req: Request) => any
-type Route = Array<RequestHandler>
+type Filter = (req: Request) => any
+type Route = Filter[]
 
 export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
   options: { [key: string]: any }
+  private request: Request | null
   constructor (options = {}) {
     this.routes = []
     this.subrouters = []
     this.options = options
+    this.request = null
+  }
+
+  currentRequest (exception?: any): Request | null {
+    if (this.request) {
+      return this.request
+    }
+    if (!exception) {
+      return null
+    }
+    throw exception
   }
 
   route (...fns: Route) {
@@ -38,7 +50,9 @@ export class Router {
       }
       for (const route of this.routes) {
         const req = currentRequest(prefix)
+        this.request = req
         if (!req.valid) {
+          this.request = null
           return
         }
         for (const filter of route) {
@@ -48,9 +62,11 @@ export class Router {
             virtualFragments.push(res)
             const container = this.options.container || document.body
             container.appendChild(res)
+            this.request = null
             return
           }
           if (res !== req || !req.valid) {
+            this.request = null
             break
           }
         }

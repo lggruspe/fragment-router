@@ -88,6 +88,81 @@ describe('Router', () => {
     })
   })
 
+  describe('currentRequest', () => {
+    beforeEach(mockDom)
+
+    it('should be null between routes', async () => {
+      const router = new Router()
+      router.route(() => {}).listen()
+      window.location.hash = '#'
+      await wait()
+      assert.strictEqual(router.currentRequest(), null)
+    })
+
+    describe('no exception', () => {
+      describe('while handling requests', () => {
+        it('should return request object passed to filters', async () => {
+          const router = new Router()
+          router.route(
+            req => {
+              assert.deepStrictEqual(router.currentRequest(), req)
+              assert.deepStrictEqual(router.currentRequest()!.id, 'foo')
+              return req
+            },
+            req => {
+              assert.deepStrictEqual(router.currentRequest(), req)
+              assert.deepStrictEqual(router.currentRequest()!.id, 'foo')
+            }
+          )
+          router.listen()
+          window.location.hash = '#foo'
+          await wait()
+        })
+      })
+
+      describe('while not handling requests', () => {
+        it('should return null', () => {
+          const router = new Router()
+          assert.strictEqual(router.currentRequest(), null)
+        })
+      })
+    })
+
+    describe('with exception', () => {
+      describe('while handling requests', () => {
+        it('should return request object passed to filters', async () => {
+          const router = new Router()
+          const exception = new Error('test')
+          router.route(
+            req => {
+              assert.deepStrictEqual(router.currentRequest(exception), req)
+              assert.deepStrictEqual(router.currentRequest(exception)!.id, 'foo')
+              return req
+            },
+            req => {
+              assert.deepStrictEqual(router.currentRequest(exception), req)
+              assert.deepStrictEqual(router.currentRequest(exception)!.id, 'foo')
+            }
+          )
+          router.listen()
+          window.location.hash = '#foo'
+          await wait()
+        })
+      })
+
+      describe('while not handling requests', () => {
+        it('should throw an exception', () => {
+          const router = new Router()
+          const exception = new Error('test')
+          assert.throws(
+            () => router.currentRequest(exception),
+            Error
+          )
+        })
+      })
+    })
+  })
+
   describe('listen', () => {
     beforeEach(mockDom)
 
