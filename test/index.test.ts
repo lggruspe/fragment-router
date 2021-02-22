@@ -12,10 +12,6 @@ async function compare (a: any, b: any) {
   assert.deepStrictEqual(await a, await b)
 }
 
-function done () {
-  return document.createElement('div')
-}
-
 function mockDom () {
   const html = `
     <div id="foo"></div>
@@ -107,7 +103,6 @@ describe('Router', () => {
             req => {
               assert.deepStrictEqual(router.currentRequest(), req)
               assert.deepStrictEqual(router.currentRequest()!.id, 'foo')
-              return req
             },
             req => {
               assert.deepStrictEqual(router.currentRequest(), req)
@@ -137,7 +132,6 @@ describe('Router', () => {
             req => {
               assert.deepStrictEqual(router.currentRequest(exception), req)
               assert.deepStrictEqual(router.currentRequest(exception)!.id, 'foo')
-              return req
             },
             req => {
               assert.deepStrictEqual(router.currentRequest(exception), req)
@@ -166,19 +160,15 @@ describe('Router', () => {
   describe('listen', () => {
     beforeEach(mockDom)
 
-    it('should use the a single req object for all filters in the same route', async () => {
+    it('should use a single req object for all filters in the same route', async () => {
       const data: Array<any> = []
       new Router()
         .route(
-          req => {
-            data.push(req)
-            return req
-          },
+          req => data.push(req),
           req => data.push(req)
         )
         .listen()
       window.location.hash = '#'
-
       await wait()
       assert.strictEqual(data.length, 2)
       assert.deepStrictEqual(data[0], data[1])
@@ -197,29 +187,41 @@ describe('Router', () => {
       assert.notEqual(data[0], data[1])
     })
 
-    describe('when req gets returned', () => {
-      it('should run every request handler', async () => {
+    it('should clear req.control between routes', async () => {
+      const data: Array<any> = []
+      new Router()
+        .route(
+          () => data.push(0),
+          req => {
+            req.control = 'next'
+            data.push(1)
+          },
+          () => data.push('error')
+        )
+        .route(
+          req => {
+            assert.ok(!req.control)
+            data.push(2)
+          }
+        )
+        .listen()
+      window.location.hash = '#'
+
+      await wait()
+      assert.deepStrictEqual(data, [0, 1, 2])
+    })
+
+    describe('when req.control does not get modified', () => {
+      it('should run every filter', async () => {
         const data: Array<number> = []
         new Router()
           .route(
-            function (req) {
-              data.push(0)
-              return req
-            },
-            function (req) {
-              data.push(1)
-              return req
-            }
+            () => data.push(0),
+            () => data.push(1)
           )
           .route(
-            function (req) {
-              data.push(2)
-              return req
-            },
-            function (req) {
-              data.push(3)
-              return req
-            }
+            () => data.push(2),
+            () => data.push(3)
           )
           .listen()
         window.location.hash = '#'
@@ -227,28 +229,20 @@ describe('Router', () => {
       })
     })
 
-    describe('when req does not get returned', () => {
+    describe('when req.control is set to "next"', () => {
       it('should skip to the next route', async () => {
         const data: Array<number> = []
         new Router()
           .route(
-            function () {
+            req => {
+              req.control = 'next'
               data.push(0)
             },
-            function (req) {
-              data.push(1)
-              return req
-            }
+            () => data.push(1)
           )
           .route(
-            function (req) {
-              data.push(2)
-              return req
-            },
-            function (req) {
-              data.push(3)
-              return req
-            }
+            () => data.push(2),
+            () => data.push(3)
           )
           .listen()
         window.location.hash = '#'
@@ -256,33 +250,25 @@ describe('Router', () => {
       })
     })
 
-    describe('when filter returns HTMLElement', () => {
-      it('should skip all remaining handlers and routes', async () => {
+    describe('when req.control is set to "abort"', () => {
+      it('should skip all remaining filters and routes', async () => {
         const data: Array<number> = []
         new Router()
           .route(
-            function () {
-              data.push(0)
-              return done()
-            },
-            function (req) {
+            () => data.push(0),
+            req => {
+              req.control = 'abort'
               data.push(1)
-              return req
-            }
+            },
+            () => data.push(2)
           )
           .route(
-            function (req) {
-              data.push(2)
-              return req
-            },
-            function (req) {
-              data.push(3)
-              return req
-            }
+            () => data.push(3),
+            () => data.push(4)
           )
           .listen()
         window.location.hash = '#'
-        await compare(data, [0])
+        await compare(data, [0, 1])
       })
     })
 
@@ -290,14 +276,15 @@ describe('Router', () => {
       it('should not handle requests if hash does not match the prefix', async () => {
         const data: Array<string> = []
         new Router()
-          .route(() => {
+          .route(req => {
             data.push('foo')
-            return done()
+            req.control = 'abort'
           })
           .listen('foo/')
         new Router()
-          .route(() => {
+          .route(req => {
             data.push('bar')
+            req.control = 'abort'
           })
           .listen('bar/')
 
@@ -365,9 +352,9 @@ describe('utils', () => {
     it('should skip to the next route if hash is non-empty', async () => {
       const data: Array<string> = []
       new Router()
-        .route(guard(isHome), () => {
+        .route(guard(isHome), req => {
           data.push('foo')
-          return done()
+          req.control = 'abort'
         })
         .route(() => {
           data.push('bar')
@@ -390,7 +377,7 @@ describe('utils', () => {
 
   describe('isNotNull', () => {
     describe('with existing fragment', () => {
-      it('should run remaining handlers', async () => {
+      it('should run remaining filters', async () => {
         const data: Array<string> = []
         new Router()
           .route(guard(isNotNull))
@@ -403,7 +390,7 @@ describe('utils', () => {
     })
 
     describe('with non-existent fragment', () => {
-      it('should skip remaining handlers in route but run handlers in other routes', async () => {
+      it('should skip remaining filters in route but run filters in other routes', async () => {
         const data: Array<string> = []
         new Router()
           .route(guard(isNotNull), () => data.push('foo'))
@@ -418,7 +405,7 @@ describe('utils', () => {
 
   describe('equals', () => {
     describe('if fragment ID equals input string', () => {
-      it('should run remaining handlers', async () => {
+      it('should run remaining filters', async () => {
         const data: Array<string> = []
         new Router()
           .route(guard(equals('foo')), () => data.push('foo'))
@@ -446,7 +433,7 @@ describe('utils', () => {
 
   describe('matches', () => {
     describe('if fragment ID matches pattern', () => {
-      it('should run all remaining handlers', async () => {
+      it('should run all remaining filters', async () => {
         const data: Array<string> = []
         new Router()
           .route(guard(matches(/ba/)), () => data.push('foo'))
@@ -565,7 +552,7 @@ describe('withPrefix', () => {
 function hello (req: Request) {
   const div = document.createElement('div')
   div.textContent = `Hello, ${req.id || 'world'}!`
-  return div
+  req.result = div
 }
 
 describe('dynamic fragments', () => {

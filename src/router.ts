@@ -1,6 +1,6 @@
 import { Request, currentRequest } from './request'
 
-type Filter = (req: Request) => any
+type Filter = (req: Request) => void
 type Route = Filter[]
 
 export class Router {
@@ -51,12 +51,13 @@ export class Router {
       for (const route of this.routes) {
         const req = currentRequest(prefix)
         this.request = req
-        if (!req.valid) {
+        if (req.control === 'abort') {
           this.request = null
           return
         }
         for (const filter of route) {
-          const res = filter(req)
+          filter(req)
+          const res = req.result
           if (res instanceof window.HTMLElement) {
             res.id = req.prefix + req.id
             virtualFragments.push(res)
@@ -65,12 +66,16 @@ export class Router {
             this.request = null
             return
           }
-          if (res !== req || !req.valid) {
+          if (req.control === 'next') {
             this.request = null
             break
+          } else if (req.control === 'abort') {
+            this.request = null
+            return
           }
         }
       }
+      this.request = null
     })
     for (const [infix, subrouter] of this.subrouters) {
       subrouter.listen(prefix + infix)

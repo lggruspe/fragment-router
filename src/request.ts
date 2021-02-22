@@ -1,27 +1,27 @@
 export interface Request {
   id: string
-  fragment: HTMLElement | null,
+  fragment: HTMLElement | null
   prefix: string
+  result: any
   [key: string]: any
 }
 
-export function currentRequest (prefix?: string) {
+export function currentRequest (prefix?: string): Request {
   prefix ||= ''
   const id = window.location.hash.slice(1)
   return {
     id: id.slice(prefix.length),
     fragment: id ? document.getElementById(id) : null,
-    valid: id.startsWith(prefix),
-    prefix
+    control: id.startsWith(prefix) ? undefined : 'abort',
+    prefix,
+    result: undefined
   }
 }
 
 export function guard (fn: (req: Request) => boolean) {
-  return (req: Request): Request | undefined => {
-    if (fn(req)) {
-      return req
-    } else {
-      return undefined
+  return (req: Request) => {
+    if (!fn(req)) {
+      req.control = 'next'
     }
   }
 }
