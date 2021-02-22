@@ -1,39 +1,36 @@
 import { Router } from './router'
 
-function defaultOptions () {
-  return {
-    container: document.body
-  }
-}
-
 export class Renderer {
   router: Router
   options: { [key: string]: any }
-  temporary: HTMLElement[]
-  replaced: {
+  private temporary: HTMLElement[]
+  private replaced: {
     original: HTMLElement,
     replacement: HTMLElement
   }[]
 
-  constructor (router: Router, options = defaultOptions()) {
+  constructor (router: Router, options = {}) {
     this.router = router
-    this.options = options
+    this.options = {
+      container: document.body,
+      ...options
+    }
     this.temporary = []
     this.replaced = []
   }
 
-  currentId (): string {
+  private currentId (): string {
     const exception = new Error('null request')
     const req = this.router.currentRequest(exception)!
     return (req.prefix || '') + (req.id || '')
   }
 
-  currentFragment (): HTMLElement | null {
+  private currentFragment (): HTMLElement | null {
     const id = this.currentId()
     return document.getElementById(id)
   }
 
-  restore () {
+  private restore () {
     while (this.temporary.length) {
       this.temporary.pop()!.remove()
     }
@@ -55,7 +52,8 @@ export class Renderer {
         replacement: element
       })
     } else {
-      this.options.container.push(element)
+      this.options.container.appendChild(element)
+      this.temporary.push(element)
     }
   }
 

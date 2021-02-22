@@ -1,4 +1,5 @@
 import { Request, currentRequest } from './request'
+import { Renderer } from './renderer'
 
 type Filter = (req: Request) => void
 type Route = Filter[]
@@ -38,16 +39,9 @@ export class Router {
     }
   }
 
-  // Control flow: router tries each route/pipeline.
-  // If a route breaks (i.e. a filter fails to return a Request object),
-  // then it tries another route.
-  // The router stops if a filter returns an HTMLElement.
   listen (prefix = '') {
-    const virtualFragments: Array<HTMLElement> = []
+    const renderer = new Renderer(this, this.options)
     window.addEventListener('hashchange', () => {
-      while (virtualFragments.length) {
-        virtualFragments.pop()!.remove()
-      }
       for (const route of this.routes) {
         const req = currentRequest(prefix)
         this.request = req
@@ -59,10 +53,7 @@ export class Router {
           filter(req)
           const res = req.result
           if (res instanceof window.HTMLElement) {
-            res.id = req.prefix + req.id
-            virtualFragments.push(res)
-            const container = this.options.container || document.body
-            container.appendChild(res)
+            renderer.write(res)
             this.request = null
             return
           }
