@@ -51,16 +51,15 @@ export class Router {
         }
         for (const filter of route) {
           filter(req)
-          const res = req.result
-          if (res instanceof window.HTMLElement) {
-            renderer.write(res)
-            this.request = null
-            return
-          }
           if (req.control === 'next') {
             this.request = null
             break
           } else if (req.control === 'abort') {
+            this.request = null
+            return
+          }
+          if (req.result instanceof window.HTMLElement) {
+            renderer.write(req.result)
             this.request = null
             return
           }

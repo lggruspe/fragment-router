@@ -1,31 +1,6 @@
 import { Request, currentRequest, Router, equals, guard, isHome, isNotNull, matches, withPrefix } from '../src/index'
+import { wait, compare, mockDom } from './utils'
 import * as assert from 'assert'
-import { JSDOM } from 'jsdom'
-
-async function wait () {
-  // Wait for queued functions (e.g. event listeners) to resolve.
-  return await new Promise(resolve => setTimeout(resolve, 0))
-}
-
-async function compare (a: any, b: any) {
-  await wait()
-  assert.deepStrictEqual(await a, await b)
-}
-
-function mockDom () {
-  const html = `
-    <div id="foo"></div>
-    <div id="bar"></div>
-    <div id="baz"></div>
-  `
-  const dom = new JSDOM(html, { url: 'https://example.com' })
-  const writable = true
-  Object.defineProperties(global, {
-    dom: { value: dom, writable },
-    window: { value: dom.window, writable },
-    document: { value: dom.window.document, writable }
-  })
-}
 
 describe('Router', () => {
   describe('constructor', () => {
