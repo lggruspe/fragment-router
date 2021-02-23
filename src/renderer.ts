@@ -1,3 +1,4 @@
+import { Plugin } from './plugin'
 import { Router } from './router'
 
 export class Renderer {
@@ -30,7 +31,7 @@ export class Renderer {
     return document.getElementById(id)
   }
 
-  private restore () {
+  protected restore () {
     while (this.temporary.length) {
       this.temporary.pop()!.remove()
     }
@@ -61,5 +62,33 @@ export class Renderer {
     this.restore()
     element.id = this.currentId()
     this.options.container.appendChild(element)
+  }
+}
+
+export class DomAppender extends Renderer implements Plugin {
+  enter () {
+    this.restore()
+  }
+
+  exit () {
+    const req = this.router.currentRequest()!
+    if (req.result instanceof window.HTMLElement) {
+      this.append(req.result)
+      req.control = 'abort' // added
+    }
+  }
+}
+
+export class DomWriter extends Renderer implements Plugin {
+  enter () {
+    this.restore()
+  }
+
+  exit () {
+    const req = this.router.currentRequest()!
+    if (req.result instanceof window.HTMLElement) {
+      this.write(req.result)
+      req.control = 'abort' // added
+    }
   }
 }
