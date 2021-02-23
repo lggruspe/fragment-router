@@ -1,6 +1,6 @@
-import { Renderer } from '../src/renderer'
-import { Router } from '../src/index'
-import { mockDom } from './utils'
+import { Renderer, DomAppender, DomWriter } from '../src/renderer'
+import { Request, Router } from '../src/index'
+import { mockDom, wait } from './utils'
 
 import * as assert from 'assert'
 
@@ -39,42 +39,72 @@ describe('Renderer', () => {
         )
       })
     })
-
-    describe('inside request context', () => {
-      it('should append element', async () => {
-
-      })
-    })
   })
 })
 
-/*
 function hello (req: Request) {
   const div = document.createElement('div')
   div.textContent = `Hello, ${req.id || 'world'}!`
   req.result = div
 }
 
-describe('dynamic fragments', () => {
+describe('DomWriter', () => {
   beforeEach(mockDom)
+
+  describe('restore', () => {
+    describe('when request ID is the same as the ID of an existing fragment', () => {
+      it('should save and restore existing fragment after switching to another hash', async () => {
+        const div = document.querySelector('#foo')
+        assert.ok(div)
+        div.textContent = 'yay'
+
+        const router = new Router()
+        const writer = new DomWriter(router)
+        router.stack.plugins.push(writer)
+        router.route(hello).listen()
+
+        window.location.hash = '#foo'
+        await wait()
+
+        const foo = document.querySelector('#foo')
+        assert.ok(Boolean(foo))
+        assert.strictEqual(foo?.textContent, 'Hello, foo!')
+
+        window.location.hash = '#bar'
+        await wait()
+
+        assert.ok(document.querySelector('#foo'))
+        assert.strictEqual(
+          document.querySelector('#foo')!.textContent,
+          'yay'
+        )
+        const bar = document.querySelector('#bar')
+        assert.ok(Boolean(bar))
+        assert.strictEqual(bar?.textContent, 'Hello, bar!')
+      })
+    })
+  })
 
   describe('with no specified container in options', () => {
     it('should insert elements into document.body', async () => {
       document.body.innerHTML = ''
-      new Router().route(hello).listen()
+      const router = new Router()
+      const writer = new DomWriter(router)
+      router.stack.plugins.push(writer)
+      router.route(hello).listen()
 
       window.location.hash = '#foo'
       await wait()
 
-      const foo = document.body.querySelector('#foo')
+      const foo = document.querySelector('#foo')
       assert.ok(Boolean(foo))
       assert.strictEqual(foo?.textContent, 'Hello, foo!')
 
       window.location.hash = '#bar'
       await wait()
 
-      assert.ok(!document.body.querySelector('#foo'))
-      const bar = document.body.querySelector('#bar')
+      assert.ok(!document.querySelector('#foo'))
+      const bar = document.querySelector('#bar')
       assert.ok(Boolean(bar))
       assert.strictEqual(bar?.textContent, 'Hello, bar!')
     })
@@ -83,13 +113,17 @@ describe('dynamic fragments', () => {
   describe('with container in options', () => {
     it('should insert elements into container', async () => {
       document.body.innerHTML = '<div id="test"></div>'
-      const container = document.body.querySelector('#test')
-      new Router({ container }).route(hello).listen()
+      const container = document.querySelector('#test')
+
+      const router = new Router()
+      const writer = new DomWriter(router, { container })
+      router.stack.plugins.push(writer)
+      router.route(hello).listen()
 
       window.location.hash = '#foo'
       await wait()
 
-      const foo = document.body.querySelector('#foo')
+      const foo = document.querySelector('#foo')
       assert.ok(Boolean(foo))
       assert.strictEqual(foo?.textContent, 'Hello, foo!')
       assert.deepStrictEqual(container, foo.parentNode)
@@ -97,12 +131,69 @@ describe('dynamic fragments', () => {
       window.location.hash = '#bar'
       await wait()
 
-      assert.ok(!document.body.querySelector('#foo'))
-      const bar = document.body.querySelector('#bar')
+      assert.ok(!document.querySelector('#foo'))
+      const bar = document.querySelector('#bar')
       assert.ok(Boolean(bar))
       assert.strictEqual(bar?.textContent, 'Hello, bar!')
       assert.deepStrictEqual(container, bar.parentNode)
     })
   })
 })
-*/
+
+describe('DomAppender', () => {
+  beforeEach(mockDom)
+
+  describe('with no specified container in options', () => {
+    it('should append elements into document.body', async () => {
+      document.body.innerHTML = ''
+      const router = new Router()
+      const writer = new DomAppender(router)
+      router.stack.plugins.push(writer)
+      router.route(hello).listen()
+
+      window.location.hash = '#foo'
+      await wait()
+
+      const foo = document.querySelector('#foo')
+      assert.ok(Boolean(foo))
+      assert.strictEqual(foo?.textContent, 'Hello, foo!')
+
+      window.location.hash = '#bar'
+      await wait()
+
+      assert.ok(document.querySelector('#foo'))
+      const bar = document.querySelector('#bar')
+      assert.ok(Boolean(bar))
+      assert.strictEqual(bar?.textContent, 'Hello, bar!')
+    })
+  })
+
+  describe('with container in options', () => {
+    it('should append elements into container', async () => {
+      document.body.innerHTML = '<div id="test"></div>'
+      const container = document.querySelector('#test')
+
+      const router = new Router()
+      const writer = new DomAppender(router, { container })
+      router.stack.plugins.push(writer)
+      router.route(hello).listen()
+
+      window.location.hash = '#foo'
+      await wait()
+
+      const foo = document.querySelector('#foo')
+      assert.ok(Boolean(foo))
+      assert.strictEqual(foo?.textContent, 'Hello, foo!')
+      assert.deepStrictEqual(container, foo.parentNode)
+
+      window.location.hash = '#bar'
+      await wait()
+
+      assert.ok(document.querySelector('#foo'))
+      const bar = document.querySelector('#bar')
+      assert.ok(Boolean(bar))
+      assert.strictEqual(bar?.textContent, 'Hello, bar!')
+      assert.deepStrictEqual(container, bar.parentNode)
+    })
+  })
+})

@@ -1,4 +1,4 @@
-import { Plugin, PluginStack } from './plugin'
+import { PluginStack } from './plugin'
 import { Request, currentRequest } from './request'
 
 type Filter = (req: Request) => void
@@ -24,7 +24,7 @@ export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
   options: { [key: string]: any }
-  stack: Plugin
+  stack: PluginStack
   private request: Request | null
   constructor (options = {}) {
     this.routes = []
@@ -100,8 +100,6 @@ export class Router {
         } catch (e) {
           if (e instanceof AbortAll) {
             break
-          } else {
-            throw e
           }
         }
       }

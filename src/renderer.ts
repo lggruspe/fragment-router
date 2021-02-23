@@ -23,7 +23,7 @@ export class Renderer {
   private currentId (): string {
     const exception = new Error('null request')
     const req = this.router.currentRequest(exception)!
-    return (req.prefix || '') + (req.id || '')
+    return req.prefix + req.id
   }
 
   private currentFragment (): HTMLElement | null {
@@ -42,9 +42,7 @@ export class Renderer {
   }
 
   write (element: HTMLElement) {
-    this.restore()
     element.id = this.currentId()
-
     const fragment = this.currentFragment()
     if (fragment) {
       fragment.replaceWith(element)
@@ -59,7 +57,6 @@ export class Renderer {
   }
 
   append (element: HTMLElement) {
-    this.restore()
     element.id = this.currentId()
     this.options.container.appendChild(element)
   }
