@@ -1,5 +1,5 @@
+import { Plugin, PluginStack } from './plugin'
 import { Request, currentRequest } from './request'
-import { Renderer } from './renderer'
 
 type Filter = (req: Request) => void
 type Route = Filter[]
@@ -8,12 +8,14 @@ export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
   options: { [key: string]: any }
+  stack: Plugin
   private request: Request | null
   constructor (options = {}) {
     this.routes = []
     this.subrouters = []
     this.options = options
     this.request = null
+    this.stack = new PluginStack()
   }
 
   currentRequest (exception?: any): Request | null {
@@ -40,10 +42,10 @@ export class Router {
   }
 
   listen (prefix = '') {
-    const renderer = new Renderer(this, this.options)
     window.addEventListener('hashchange', () => {
       for (const route of this.routes) {
         const req = currentRequest(prefix)
+        this.stack.enter()
         this.request = req
         if (req.control === 'abort') {
           this.request = null
@@ -58,8 +60,11 @@ export class Router {
             this.request = null
             return
           }
-          if (req.result instanceof window.HTMLElement) {
-            renderer.write(req.result)
+          this.stack.exit()
+          if (req.control === 'next') {
+            this.request = null
+            break
+          } else if (req.control === 'abort') {
             this.request = null
             return
           }
