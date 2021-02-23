@@ -4,6 +4,22 @@ import { Request, currentRequest } from './request'
 type Filter = (req: Request) => void
 type Route = Filter[]
 
+class AbortRoute extends Error {
+  constructor () {
+    super('abort route')
+    this.name = 'AbortRoute'
+    Object.setPrototypeOf(this, AbortRoute.prototype)
+  }
+}
+
+class AbortAll extends Error {
+  constructor () {
+    super('abort all')
+    this.name = 'AbortAll'
+    Object.setPrototypeOf(this, AbortAll.prototype)
+  }
+}
+
 export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
@@ -41,32 +57,51 @@ export class Router {
     }
   }
 
+  check (control: string) {
+    switch (control) {
+      case 'next': {
+        throw new AbortRoute()
+      }
+      case 'abort':
+        throw new AbortAll()
+      default:
+        break
+    }
+  }
+
+  runRoute (route: Route) {
+    const req = this.request!
+    for (const filter of route) {
+      try {
+        filter(req)
+        this.check(req.control)
+        this.stack.exit()
+        this.check(req.control)
+      } catch (e) {
+        if (e instanceof AbortRoute) {
+          return
+        } else {
+          throw e
+        }
+      }
+    }
+  }
+
   listen (prefix = '') {
     window.addEventListener('hashchange', () => {
       for (const route of this.routes) {
         const req = currentRequest(prefix)
-        this.stack.enter()
         this.request = req
-        if (req.control === 'abort') {
-          this.request = null
-          return
-        }
-        for (const filter of route) {
-          filter(req)
-          if (req.control === 'next') {
-            this.request = null
+        try {
+          this.check(req.control)
+          this.stack.enter()
+          this.check(req.control)
+          this.runRoute(route)
+        } catch (e) {
+          if (e instanceof AbortAll) {
             break
-          } else if (req.control === 'abort') {
-            this.request = null
-            return
-          }
-          this.stack.exit()
-          if (req.control === 'next') {
-            this.request = null
-            break
-          } else if (req.control === 'abort') {
-            this.request = null
-            return
+          } else {
+            throw e
           }
         }
       }
