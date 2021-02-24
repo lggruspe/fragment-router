@@ -78,7 +78,6 @@ export class DomAppender extends Renderer implements Plugin {
     const req = this.router.currentRequest()!
     if (req.result instanceof window.HTMLElement) {
       this.append(req.result)
-      req.control = 'abort' // added
     } else {
       this.append(defaultDiv(req.id, req.result.toString()))
     }
@@ -94,7 +93,6 @@ export class DomWriter extends Renderer implements Plugin {
     const req = this.router.currentRequest()!
     if (req.result instanceof window.HTMLElement) {
       this.write(req.result)
-      req.control = 'abort' // added
     } else {
       this.write(defaultDiv(req.id, req.result.toString()))
     }
