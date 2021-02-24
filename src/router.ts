@@ -4,32 +4,17 @@ import { Request, currentRequest } from './request'
 type Filter = (req: Request) => void
 type Route = Filter[]
 
-class AbortRoute extends Error {
-  constructor () {
-    super('abort route')
-    this.name = 'AbortRoute'
-    Object.setPrototypeOf(this, AbortRoute.prototype)
-  }
-}
-
-class AbortAll extends Error {
-  constructor () {
-    super('abort all')
-    this.name = 'AbortAll'
-    Object.setPrototypeOf(this, AbortAll.prototype)
-  }
-}
+class AbortRoute {}
+class AbortAll {}
 
 export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
-  options: { [key: string]: any }
   stack: PluginStack
   private request: Request | null
-  constructor (options = {}) {
+  constructor () {
     this.routes = []
     this.subrouters = []
-    this.options = options
     this.request = null
     this.stack = new PluginStack()
   }
@@ -75,8 +60,6 @@ export class Router {
       try {
         filter(req)
         this.check(req.control)
-        this.stack.exit()
-        this.check(req.control)
       } catch (e) {
         if (e instanceof AbortRoute) {
           return
@@ -97,6 +80,9 @@ export class Router {
           this.stack.enter()
           this.check(req.control)
           this.runRoute(route)
+          this.check(req.control)
+          this.stack.exit()
+          this.check(req.control)
         } catch (e) {
           if (e instanceof AbortAll) {
             break
