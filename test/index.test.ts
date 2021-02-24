@@ -164,7 +164,7 @@ describe('Router', () => {
       assert.notEqual(data[0], data[1])
     })
 
-    describe('when req.control does not get modified', () => {
+    describe('when filter does not throw', () => {
       it('should not run other filters', async () => {
         const data: Array<number> = []
         new Router()
@@ -181,7 +181,7 @@ describe('Router', () => {
       })
     })
 
-    describe('when req.control is set to "next"', () => {
+    describe('when req.control.next is thrown', () => {
       it('should skip to the next route', async () => {
         const data: Array<number> = []
         new Router()
@@ -202,7 +202,7 @@ describe('Router', () => {
       })
     })
 
-    describe('when req.control is set to "abort"', () => {
+    describe('when req.control.abort is thrown', () => {
       it('should skip all remaining filters and routes', async () => {
         const data: Array<number> = []
         new Router()

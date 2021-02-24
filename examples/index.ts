@@ -1,43 +1,83 @@
 import {
-  guard,
-  equals,
   matches,
+  DomWriter,
+  Plugin,
   Request,
   Router
 } from '@lggruspe/fragment-router'
 
-function changeBackgroundColor (req: Request) {
-  const color = req.matched?.groups?.color
-  if (color) {
-    document.body.style.backgroundColor = color
+class ColorChanger implements Plugin {
+  router: Router
+  constructor (router: Router) {
+    this.router = router
+  }
+
+  get req () {
+    return this.router.currentRequest()
+  }
+
+  enter () {}
+
+  exit () {
+    const color = this.req?.color
+    if (color) {
+      document.body.style.backgroundColor = color
+    }
   }
 }
 
-function hello () {
-  const p = document.createElement('p')
-  p.textContent = 'Hello, world!'
-  return p
+class FontChanger implements Plugin {
+  router: Router
+  constructor (router: Router) {
+    this.router = router
+  }
+
+  get req () {
+    return this.router.currentRequest()
+  }
+
+  enter () {}
+
+  exit () {
+    const font = this.req?.font
+    if (font) {
+      document.body.style.fontFamily = font
+    }
+  }
 }
 
-new Router()
-  .route(guard(matches(/^(?<color>[a-z]+)$/)), changeBackgroundColor)
-  .listen('color/')
+const router = new Router()
+const colorChanger = new ColorChanger(router)
+const writer = new DomWriter(router)
+const fontChanger = new FontChanger(router)
+router.stack.plugins.push(writer, colorChanger, fontChanger)
 
-new Router()
-  .route(guard(equals('serif')), () => {
-    document.body.style.fontFamily = 'serif'
-    return hello()
-  })
-  .route(guard(equals('sans-serif')), () => {
-    document.body.style.fontFamily = 'sans-serif'
-    return hello()
-  })
-  .route(guard(equals('cursive')), () => {
-    document.body.style.fontFamily = 'cursive'
-    return hello()
-  })
-  .route(() => {
-    // default
-    return hello()
-  })
-  .listen()
+function setResult (req: Request) {
+  req.result = '#' + req.id
+}
+
+router
+
+  .route(
+    req => {
+      if (!matches(/^color\/(?<color>[a-z]+)$/)(req)) {
+        throw req.control.next
+      }
+    },
+    req => {
+      const color = req.matched?.groups?.color
+      if (color) {
+        req.color = color
+      }
+    },
+    setResult
+  )
+
+  .route(
+    req => {
+      req.font = req.id
+    },
+    setResult
+  )
+
+router.listen()
