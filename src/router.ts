@@ -16,9 +16,9 @@ export interface Request {
 type Filter = (req: Request) => void
 type Route = Filter[]
 
-function currentRequest (): Request {
+export function createRequest (id: string): Request {
   return {
-    id: window.location.hash.slice(1),
+    id,
     control: {
       next: new AbortRoute(),
       abort: new AbortAll()
@@ -81,7 +81,7 @@ export class Router {
     const prefixFilter = withPrefix(prefix)
     window.addEventListener('hashchange', () => {
       for (const route of this.routes) {
-        const req = currentRequest()
+        const req = createRequest(window.location.hash.slice(1))
         this.request = req
         if (!prefixFilter(req)) {
           break

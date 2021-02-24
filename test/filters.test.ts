@@ -1,4 +1,4 @@
-import { Router, equals, guard, isHome, matches, withPrefix } from '../src/index'
+import { createRequest, Router, equals, guard, isHome, matches, withPrefix } from '../src/index'
 import { wait, compare, mockDom } from './utils'
 import * as assert from 'assert'
 
@@ -10,7 +10,7 @@ describe('isHome', () => {
     new Router()
       .route(guard(isHome), req => {
         data.push('foo')
-        req.control = 'abort'
+        throw req.control.abort
       })
       .route(() => {
         data.push('bar')
@@ -155,13 +155,10 @@ describe('withPrefix', () => {
   describe('with non-empty prefix', () => {
     it('should have the same result as calling currentRequest with a prefix', async () => {
       window.location.hash = '#foo/bar'
-      const expected = {
-        id: 'bar',
-        prefix: 'foo/'
-      }
-      const actual = withPrefix('foo/')({
-        id: 'foo/bar'
-      })
+      const expected = createRequest('bar')
+      expected.prefix = 'foo/'
+
+      const actual = withPrefix('foo/')(createRequest('foo/bar'))
       await wait()
       assert.deepStrictEqual(expected, actual)
     })
@@ -169,8 +166,12 @@ describe('withPrefix', () => {
 
   describe('with empty prefix', () => {
     it('should not modify input req', () => {
-      const expected = { id: 'test', prefix: '' }
-      const actual = { id: 'test', prefix: '' }
+      const expected = createRequest('test')
+      expected.prefix = ''
+
+      const actual = createRequest('test')
+      actual.prefix = ''
+
       withPrefix('')(actual)
       assert.deepStrictEqual(expected, actual)
     })
@@ -178,9 +179,7 @@ describe('withPrefix', () => {
 
   describe('when prefix does not match id in req', () => {
     it('should not return anything', () => {
-      assert.ok(!withPrefix('foo')({
-        id: ''
-      }))
+      assert.ok(!withPrefix('foo')(createRequest('')))
     })
   })
 })
