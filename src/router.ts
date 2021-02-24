@@ -3,9 +3,6 @@ import { withPrefix } from './filters'
 
 export interface Request {
   id: string
-  fragment?: HTMLElement | null
-  prefix?: string
-  result?: any
   [key: string]: any
 }
 
@@ -16,13 +13,8 @@ class AbortRoute {}
 class AbortAll {}
 
 function currentRequest (): Request {
-  const id = window.location.hash.slice(1)
   return {
-    id,
-    fragment: id ? document.getElementById(id) : null,
-    prefix: '',
-    result: undefined,
-    control: undefined
+    id: window.location.hash.slice(1)
   }
 }
 

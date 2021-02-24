@@ -30,7 +30,7 @@ export class Renderer {
   private currentId (): string {
     const exception = new Error('null request')
     const req = this.router.currentRequest(exception)!
-    return req.prefix + req.id
+    return req.prefix || '' + req.id
   }
 
   private currentFragment (): HTMLElement | null {

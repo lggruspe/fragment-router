@@ -12,10 +12,6 @@ export function isHome (req: Request): boolean {
   return req.id === ''
 }
 
-export function isNotNull (req: Request): boolean {
-  return Boolean(req.fragment)
-}
-
 export function equals (str: string) {
   return (req: Request) => {
     return req.id === str
