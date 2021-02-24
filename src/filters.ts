@@ -3,7 +3,7 @@ import { Request } from './index'
 export function guard (fn: (req: Request) => boolean) {
   return (req: Request) => {
     if (!fn(req)) {
-      req.control = 'next'
+      throw req.control.next
     }
   }
 }

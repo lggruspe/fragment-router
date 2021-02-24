@@ -1,20 +1,28 @@
 import { PluginStack } from './plugin'
 import { withPrefix } from './filters'
 
+class AbortRoute {}
+class AbortAll {}
+
 export interface Request {
   id: string
+  control: {
+    next: AbortRoute,
+    abort: AbortAll
+  }
   [key: string]: any
 }
 
 type Filter = (req: Request) => void
 type Route = Filter[]
 
-class AbortRoute {}
-class AbortAll {}
-
 function currentRequest (): Request {
   return {
-    id: window.location.hash.slice(1)
+    id: window.location.hash.slice(1),
+    control: {
+      next: new AbortRoute(),
+      abort: new AbortAll()
+    }
   }
 }
 
@@ -53,24 +61,11 @@ export class Router {
     }
   }
 
-  check (control: string) {
-    switch (control) {
-      case 'next': {
-        throw new AbortRoute()
-      }
-      case 'abort':
-        throw new AbortAll()
-      default:
-        break
-    }
-  }
-
   runRoute (route: Route): boolean {
     const req = this.request!
     for (const filter of route) {
       try {
         filter(req)
-        this.check(req.control)
       } catch (e) {
         if (e instanceof AbortRoute) {
           return false
@@ -89,16 +84,12 @@ export class Router {
         const req = currentRequest()
         this.request = req
         if (!prefixFilter(req)) {
-          req.control = 'abort'
+          break
         }
         try {
-          this.check(req.control)
           this.stack.enter()
-          this.check(req.control)
           if (this.runRoute(route)) {
-            this.check(req.control)
             this.stack.exit()
-            this.check(req.control)
             break
           }
         } catch (e) {

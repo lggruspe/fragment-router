@@ -152,7 +152,7 @@ describe('Router', () => {
     it('should create a new req object for each route', async () => {
       const filter = (req: Request) => {
         data.push(req)
-        req.control = 'next'
+        throw req.control.next
       }
 
       const data: Array<any> = []
@@ -162,30 +162,6 @@ describe('Router', () => {
       await wait()
       assert.strictEqual(data.length, 2)
       assert.notEqual(data[0], data[1])
-    })
-
-    it('should clear req.control between routes', async () => {
-      const data: Array<any> = []
-      new Router()
-        .route(
-          () => data.push(0),
-          req => {
-            req.control = 'next'
-            data.push(1)
-          },
-          () => data.push('error')
-        )
-        .route(
-          req => {
-            assert.ok(!req.control)
-            data.push(2)
-          }
-        )
-        .listen()
-      window.location.hash = '#'
-
-      await wait()
-      assert.deepStrictEqual(data, [0, 1, 2])
     })
 
     describe('when req.control does not get modified', () => {
@@ -211,8 +187,8 @@ describe('Router', () => {
         new Router()
           .route(
             req => {
-              req.control = 'next'
               data.push(0)
+              throw req.control.next
             },
             () => data.push(1)
           )
@@ -233,8 +209,8 @@ describe('Router', () => {
           .route(
             () => data.push(0),
             req => {
-              req.control = 'abort'
               data.push(1)
+              throw req.control.abort
             },
             () => data.push(2)
           )
@@ -254,13 +230,13 @@ describe('Router', () => {
         new Router()
           .route(req => {
             data.push('foo')
-            req.control = 'abort'
+            throw req.control.abort
           })
           .listen('foo/')
         new Router()
           .route(req => {
             data.push('bar')
-            req.control = 'abort'
+            throw req.control.abort
           })
           .listen('bar/')
 
