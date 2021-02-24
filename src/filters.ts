@@ -38,7 +38,7 @@ export function withPrefix (prefix: string) {
     if (!prefix) return req
     if (req.id.startsWith(prefix)) {
       req.id = req.id.slice(prefix.length)
-      req.prefix += prefix
+      req.prefix = req.prefix || '' + prefix
       return req
     } else {
       return undefined

@@ -1,10 +1,11 @@
 import { PluginStack } from './plugin'
+import { withPrefix } from './filters'
 
 export interface Request {
   id: string
-  fragment: HTMLElement | null
-  prefix: string
-  result: any
+  fragment?: HTMLElement | null
+  prefix?: string
+  result?: any
   [key: string]: any
 }
 
@@ -14,15 +15,14 @@ type Route = Filter[]
 class AbortRoute {}
 class AbortAll {}
 
-export function currentRequest (prefix?: string): Request {
-  prefix ||= ''
+function currentRequest (): Request {
   const id = window.location.hash.slice(1)
   return {
-    id: id.slice(prefix.length),
+    id,
     fragment: id ? document.getElementById(id) : null,
-    control: id.startsWith(prefix) ? undefined : 'abort',
-    prefix,
-    result: undefined
+    prefix: '',
+    result: undefined,
+    control: undefined
   }
 }
 
@@ -91,10 +91,14 @@ export class Router {
   }
 
   listen (prefix = '') {
+    const prefixFilter = withPrefix(prefix)
     window.addEventListener('hashchange', () => {
       for (const route of this.routes) {
-        const req = currentRequest(prefix)
+        const req = currentRequest()
         this.request = req
+        if (!prefixFilter(req)) {
+          req.control = 'abort'
+        }
         try {
           this.check(req.control)
           this.stack.enter()
