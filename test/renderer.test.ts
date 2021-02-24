@@ -110,6 +110,25 @@ describe('DomWriter', () => {
     })
   })
 
+  describe('with non-HTMLElement req.result', () => {
+    it('should insert div with result as textContent', async () => {
+      const router = new Router()
+      const writer = new DomWriter(router)
+      router.stack.plugins.push(writer)
+      router.route(req => {
+        req.result = [1, 2, 3]
+      }).listen()
+
+      window.location.hash = '#test'
+      await wait()
+
+      const div = document.querySelector('#test')!
+      assert.ok(Boolean(div))
+      assert.strictEqual(div.tagName, 'DIV')
+      assert.strictEqual(div.textContent, [1, 2, 3].toString())
+    })
+  })
+
   describe('with container in options', () => {
     it('should insert elements into container', async () => {
       document.body.innerHTML = '<div id="test"></div>'
@@ -194,6 +213,25 @@ describe('DomAppender', () => {
       assert.ok(Boolean(bar))
       assert.strictEqual(bar?.textContent, 'Hello, bar!')
       assert.deepStrictEqual(container, bar.parentNode)
+    })
+  })
+
+  describe('with non-HTMLElement req.result', () => {
+    it('should append div with result as textContent', async () => {
+      const router = new Router()
+      const writer = new DomAppender(router)
+      router.stack.plugins.push(writer)
+      router.route(req => {
+        req.result = [1, 2, 3]
+      }).listen()
+
+      window.location.hash = '#test'
+      await wait()
+
+      const div = document.querySelector('#test')!
+      assert.ok(Boolean(div))
+      assert.strictEqual(div.tagName, 'DIV')
+      assert.strictEqual(div.textContent, [1, 2, 3].toString())
     })
   })
 })

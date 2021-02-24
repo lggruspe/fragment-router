@@ -1,6 +1,13 @@
 import { Plugin } from './plugin'
 import { Router } from './router'
 
+function defaultDiv (id: string, content: string): HTMLElement {
+  const div = document.createElement('div')
+  div.id = id
+  div.textContent = content
+  return div
+}
+
 export class Renderer {
   router: Router
   options: { [key: string]: any }
@@ -72,6 +79,8 @@ export class DomAppender extends Renderer implements Plugin {
     if (req.result instanceof window.HTMLElement) {
       this.append(req.result)
       req.control = 'abort' // added
+    } else {
+      this.append(defaultDiv(req.id, req.result.toString()))
     }
   }
 }
@@ -86,6 +95,8 @@ export class DomWriter extends Renderer implements Plugin {
     if (req.result instanceof window.HTMLElement) {
       this.write(req.result)
       req.control = 'abort' // added
+    } else {
+      this.write(defaultDiv(req.id, req.result.toString()))
     }
   }
 }
