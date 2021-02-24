@@ -54,7 +54,7 @@ export class Router {
     }
   }
 
-  runRoute (route: Route) {
+  runRoute (route: Route): boolean {
     const req = this.request!
     for (const filter of route) {
       try {
@@ -62,12 +62,13 @@ export class Router {
         this.check(req.control)
       } catch (e) {
         if (e instanceof AbortRoute) {
-          return
+          return false
         } else {
           throw e
         }
       }
     }
+    return true
   }
 
   listen (prefix = '') {
@@ -79,10 +80,12 @@ export class Router {
           this.check(req.control)
           this.stack.enter()
           this.check(req.control)
-          this.runRoute(route)
-          this.check(req.control)
-          this.stack.exit()
-          this.check(req.control)
+          if (this.runRoute(route)) {
+            this.check(req.control)
+            this.stack.exit()
+            this.check(req.control)
+            break
+          }
         } catch (e) {
           if (e instanceof AbortAll) {
             break

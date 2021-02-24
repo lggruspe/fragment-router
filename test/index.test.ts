@@ -1,4 +1,4 @@
-import { currentRequest, Router, equals, guard, isHome, isNotNull, matches, withPrefix } from '../src/index'
+import { currentRequest, Request, Router, equals, guard, isHome, isNotNull, matches, withPrefix } from '../src/index'
 import { wait, compare, mockDom } from './utils'
 import * as assert from 'assert'
 
@@ -150,11 +150,13 @@ describe('Router', () => {
     })
 
     it('should create a new req object for each route', async () => {
+      const filter = (req: Request) => {
+        data.push(req)
+        req.control = 'next'
+      }
+
       const data: Array<any> = []
-      new Router()
-        .route(req => data.push(req))
-        .route(req => data.push(req))
-        .listen()
+      new Router().route(filter).route(filter).listen()
       window.location.hash = '#'
 
       await wait()
@@ -187,7 +189,7 @@ describe('Router', () => {
     })
 
     describe('when req.control does not get modified', () => {
-      it('should run every filter', async () => {
+      it('should not run other filters', async () => {
         const data: Array<number> = []
         new Router()
           .route(
@@ -195,12 +197,11 @@ describe('Router', () => {
             () => data.push(1)
           )
           .route(
-            () => data.push(2),
-            () => data.push(3)
+            () => data.push(2)
           )
           .listen()
         window.location.hash = '#'
-        await compare(data, [0, 1, 2, 3])
+        await compare(data, [0, 1])
       })
     })
 
@@ -355,10 +356,11 @@ describe('utils', () => {
       it('should run remaining filters', async () => {
         const data: Array<string> = []
         new Router()
-          .route(guard(isNotNull))
-          .route(() => data.push('foo'))
+          .route(
+            guard(isNotNull),
+            () => data.push('foo')
+          )
           .listen()
-
         window.location.hash = '#foo'
         await compare(data, ['foo'])
       })
@@ -371,7 +373,6 @@ describe('utils', () => {
           .route(guard(isNotNull), () => data.push('foo'))
           .route(() => data.push('bar'))
           .listen()
-
         window.location.hash = '#non-existent-fragment'
         await compare(data, ['bar'])
       })
@@ -383,10 +384,11 @@ describe('utils', () => {
       it('should run remaining filters', async () => {
         const data: Array<string> = []
         new Router()
-          .route(guard(equals('foo')), () => data.push('foo'))
-          .route(() => data.push('bar'))
+          .route(
+            guard(equals('foo')), () => data.push('foo'),
+            () => data.push('bar')
+          )
           .listen()
-
         window.location.hash = '#foo'
         await compare(data, ['foo', 'bar'])
       })
@@ -411,8 +413,10 @@ describe('utils', () => {
       it('should run all remaining filters', async () => {
         const data: Array<string> = []
         new Router()
-          .route(guard(matches(/ba/)), () => data.push('foo'))
-          .route(() => data.push('bar'))
+          .route(
+            guard(matches(/ba/)), () => data.push('foo'),
+            () => data.push('bar')
+          )
           .listen()
 
         window.location.hash = '#bar'
