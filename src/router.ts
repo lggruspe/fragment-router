@@ -1,11 +1,30 @@
 import { PluginStack } from './plugin'
-import { Request, currentRequest } from './request'
+
+export interface Request {
+  id: string
+  fragment: HTMLElement | null
+  prefix: string
+  result: any
+  [key: string]: any
+}
 
 type Filter = (req: Request) => void
 type Route = Filter[]
 
 class AbortRoute {}
 class AbortAll {}
+
+export function currentRequest (prefix?: string): Request {
+  prefix ||= ''
+  const id = window.location.hash.slice(1)
+  return {
+    id: id.slice(prefix.length),
+    fragment: id ? document.getElementById(id) : null,
+    control: id.startsWith(prefix) ? undefined : 'abort',
+    prefix,
+    result: undefined
+  }
+}
 
 export class Router {
   routes: Array<Route>

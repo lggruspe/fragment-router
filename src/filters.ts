@@ -1,22 +1,4 @@
-export interface Request {
-  id: string
-  fragment: HTMLElement | null
-  prefix: string
-  result: any
-  [key: string]: any
-}
-
-export function currentRequest (prefix?: string): Request {
-  prefix ||= ''
-  const id = window.location.hash.slice(1)
-  return {
-    id: id.slice(prefix.length),
-    fragment: id ? document.getElementById(id) : null,
-    control: id.startsWith(prefix) ? undefined : 'abort',
-    prefix,
-    result: undefined
-  }
-}
+import { Request } from './index'
 
 export function guard (fn: (req: Request) => boolean) {
   return (req: Request) => {
