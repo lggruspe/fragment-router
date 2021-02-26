@@ -19,18 +19,24 @@ Example
 -------
 
 ```typescript
-import { guard, matches, Request, Router } from '@lggruspe/fragment-router'
+import { check, matches, DomAppender, Router } from '@lggruspe/fragment-router'
 
-function changeBackgroundColor (req: Request) {
-  const color = req.matched?.groups?.color
-  if (color) {
-    document.body.style.backgroundColor = color
+const router = new Router()
+const appender = new DomAppender(router)
+
+router.route(
+  check(matches(/^hello\/(?<name>[a-z]+)$/)),
+  req => {
+    // print hello/<name> in console
+    console.log(req.id)
+    router.defer(() => {
+      // append p element after processing request
+      appender.renderHtml(`<p>Hello, ${req.params.name}!</p>`)
+    })
   }
-}
+)
 
-new Router()
-  .route(guard(matches(/^(?<color>[a-z]+)$/)), changeBackgroundColor)
-  .listen('color/')
+router.listen()
 ```
 
 See `examples/`.
