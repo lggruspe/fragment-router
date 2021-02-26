@@ -53,7 +53,13 @@ abstract class Renderer {
     this.render(defaultDiv(this.currentId(), content.toString()))
   }
 
-  // TODO renderHtml
+  renderHtml (html: string) {
+    // Note: only inserts first element
+    const template = document.createElement('template')
+    template.innerHTML = html
+    const fragment = template.content
+    this.render(fragment.firstElementChild as HTMLElement)
+  }
 }
 
 export class DomAppender extends Renderer {

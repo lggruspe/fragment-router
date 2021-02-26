@@ -141,10 +141,10 @@ describe('DomAppender', () => {
     it('should append elements into document.body', async () => {
       document.body.innerHTML = ''
       const router = new Router()
-      const writer = new DomAppender(router)
+      const appender = new DomAppender(router)
       router.route(req => {
         router.defer(() => {
-          writer.renderContent(`Hello, ${req.id}!`)
+          appender.renderContent(`Hello, ${req.id}!`)
         })
       }).listen()
 
@@ -171,10 +171,10 @@ describe('DomAppender', () => {
       const container = document.querySelector('#test')
 
       const router = new Router()
-      const writer = new DomAppender(router, { container })
+      const appender = new DomAppender(router, { container })
       router.route(req => {
         router.defer(() => {
-          writer.renderContent(`Hello, ${req.id}!`)
+          appender.renderContent(`Hello, ${req.id}!`)
         })
       }).listen()
 
@@ -200,10 +200,10 @@ describe('DomAppender', () => {
   describe('with non-HTMLElement', () => {
     it('should append div with result as textContent', async () => {
       const router = new Router()
-      const writer = new DomAppender(router)
+      const appender = new DomAppender(router)
       router.route(() => {
         router.defer(() => {
-          writer.renderContent([1, 2, 3])
+          appender.renderContent([1, 2, 3])
         })
       }).listen()
 
@@ -225,6 +225,32 @@ describe('DomAppender', () => {
       assert.throws(
         () => renderer.render(div)
       )
+    })
+  })
+
+  describe('renderHtml', () => {
+    it('should convert html to element and append it to the document', async () => {
+      document.body.innerHTML = ''
+      const router = new Router()
+      const appender = new DomAppender(router)
+      router.route(
+        req => {
+          router.defer(() => {
+            appender.renderHtml(`
+              <h1>${req.id}</h1>
+            `)
+          })
+        }
+      ).listen()
+
+      window.location.hash = '#test'
+      await wait()
+
+      const h1 = document.querySelector('#test')!
+      assert.ok(Boolean(h1))
+      assert.strictEqual(h1.tagName, 'H1')
+      assert.strictEqual(h1.id, 'test')
+      assert.strictEqual(h1.textContent, 'test')
     })
   })
 })
