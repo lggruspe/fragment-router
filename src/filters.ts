@@ -1,6 +1,6 @@
 import { Request } from './index'
 
-export function guard (fn: (req: Request) => boolean) {
+export function check (fn: (req: Request) => boolean) {
   return (req: Request) => {
     if (!fn(req)) {
       throw req.control.next
@@ -23,6 +23,9 @@ export function matches (pattern: RegExp) {
     const result = pattern.exec(req.id)
     if (result) {
       req.matched = result
+      if (req.matched.groups) {
+        req.params = req.matched.groups
+      }
       return true
     }
     return false
