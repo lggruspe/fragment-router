@@ -1,4 +1,3 @@
-import { PluginStack } from './plugin'
 import { withPrefix } from './filters'
 
 class AbortRoute {}
@@ -29,14 +28,12 @@ export function createRequest (id: string): Request {
 export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
-  stack: PluginStack
   private deferred: Route
   private request: Request | null
   constructor () {
     this.routes = []
     this.subrouters = []
     this.request = null
-    this.stack = new PluginStack()
     this.deferred = []
   }
 
@@ -101,9 +98,7 @@ export class Router {
           break
         }
         try {
-          this.stack.enter()
           if (this.runRoute(route)) {
-            this.stack.exit()
             this.runDeferred()
             break
           }

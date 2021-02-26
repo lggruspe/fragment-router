@@ -1,55 +1,21 @@
-import { Renderer, DomAppender, DomWriter } from '../src/renderer'
-import { Request, Router } from '../src/index'
+import { Router, DomAppender, DomWriter } from '../src/index'
 import { mockDom, wait } from './utils'
 
 import * as assert from 'assert'
 
-describe('Renderer', () => {
-  beforeEach(mockDom)
-
-  describe('constructor', () => {
-    it('should use document.body as default container if none is specified', () => {
-      const router = new Router()
-      const renderer = new Renderer(router)
-      assert.strictEqual(renderer.options.container, document.body)
-    })
-  })
-
-  describe('write', () => {
-    describe('outside of request context', () => {
-      it('should throw an exception', () => {
-        const router = new Router()
-        const renderer = new Renderer(router)
-        const div = document.createElement('div')
-        assert.throws(
-          () => renderer.write(div)
-        )
-      })
-    })
-  })
-
-  describe('append', () => {
-    describe('outside of request context', () => {
-      it('should throw an exception', () => {
-        const router = new Router()
-        const renderer = new Renderer(router)
-        const div = document.createElement('div')
-        assert.throws(
-          () => renderer.append(div)
-        )
-      })
-    })
-  })
-})
-
-function hello (req: Request) {
-  const div = document.createElement('div')
-  div.textContent = `Hello, ${req.id || 'world'}!`
-  req.result = div
-}
-
 describe('DomWriter', () => {
   beforeEach(mockDom)
+
+  describe('outside of request context', () => {
+    it('should throw an exception', () => {
+      const router = new Router()
+      const renderer = new DomWriter(router)
+      const div = document.createElement('div')
+      assert.throws(
+        () => renderer.render(div)
+      )
+    })
+  })
 
   describe('restore', () => {
     describe('when request ID is the same as the ID of an existing fragment', () => {
@@ -60,9 +26,11 @@ describe('DomWriter', () => {
 
         const router = new Router()
         const writer = new DomWriter(router)
-        router.stack.plugins.push(writer)
-        router.route(hello).listen()
-
+        router.route(req => {
+          router.defer(() => {
+            writer.renderContent(`Hello, ${req.id}!`)
+          })
+        }).listen()
         window.location.hash = '#foo'
         await wait()
 
@@ -90,8 +58,11 @@ describe('DomWriter', () => {
       document.body.innerHTML = ''
       const router = new Router()
       const writer = new DomWriter(router)
-      router.stack.plugins.push(writer)
-      router.route(hello).listen()
+      router.route(req => {
+        router.defer(() => {
+          writer.renderContent(`Hello, ${req.id}!`)
+        })
+      }).listen()
 
       window.location.hash = '#foo'
       await wait()
@@ -110,13 +81,14 @@ describe('DomWriter', () => {
     })
   })
 
-  describe('with non-HTMLElement req.result', () => {
+  describe('with non-HTMLElement', () => {
     it('should insert div with result as textContent', async () => {
       const router = new Router()
       const writer = new DomWriter(router)
-      router.stack.plugins.push(writer)
-      router.route(req => {
-        req.result = [1, 2, 3]
+      router.route(() => {
+        router.defer(() => {
+          writer.renderContent([1, 2, 3])
+        })
       }).listen()
 
       window.location.hash = '#test'
@@ -136,8 +108,11 @@ describe('DomWriter', () => {
 
       const router = new Router()
       const writer = new DomWriter(router, { container })
-      router.stack.plugins.push(writer)
-      router.route(hello).listen()
+      router.route(req => {
+        router.defer(() => {
+          writer.renderContent(`Hello, ${req.id}!`)
+        })
+      }).listen()
 
       window.location.hash = '#foo'
       await wait()
@@ -167,8 +142,11 @@ describe('DomAppender', () => {
       document.body.innerHTML = ''
       const router = new Router()
       const writer = new DomAppender(router)
-      router.stack.plugins.push(writer)
-      router.route(hello).listen()
+      router.route(req => {
+        router.defer(() => {
+          writer.renderContent(`Hello, ${req.id}!`)
+        })
+      }).listen()
 
       window.location.hash = '#foo'
       await wait()
@@ -194,8 +172,11 @@ describe('DomAppender', () => {
 
       const router = new Router()
       const writer = new DomAppender(router, { container })
-      router.stack.plugins.push(writer)
-      router.route(hello).listen()
+      router.route(req => {
+        router.defer(() => {
+          writer.renderContent(`Hello, ${req.id}!`)
+        })
+      }).listen()
 
       window.location.hash = '#foo'
       await wait()
@@ -216,13 +197,14 @@ describe('DomAppender', () => {
     })
   })
 
-  describe('with non-HTMLElement req.result', () => {
+  describe('with non-HTMLElement', () => {
     it('should append div with result as textContent', async () => {
       const router = new Router()
       const writer = new DomAppender(router)
-      router.stack.plugins.push(writer)
-      router.route(req => {
-        req.result = [1, 2, 3]
+      router.route(() => {
+        router.defer(() => {
+          writer.renderContent([1, 2, 3])
+        })
       }).listen()
 
       window.location.hash = '#test'
@@ -232,6 +214,17 @@ describe('DomAppender', () => {
       assert.ok(Boolean(div))
       assert.strictEqual(div.tagName, 'DIV')
       assert.strictEqual(div.textContent, [1, 2, 3].toString())
+    })
+  })
+
+  describe('outside of request context', () => {
+    it('should throw an exception', () => {
+      const router = new Router()
+      const renderer = new DomAppender(router)
+      const div = document.createElement('div')
+      assert.throws(
+        () => renderer.render(div)
+      )
     })
   })
 })

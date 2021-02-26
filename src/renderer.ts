@@ -1,4 +1,3 @@
-import { Plugin } from './plugin'
 import { Router } from './router'
 
 function defaultDiv (id: string, content: string): HTMLElement {
@@ -8,11 +7,11 @@ function defaultDiv (id: string, content: string): HTMLElement {
   return div
 }
 
-export class Renderer {
+abstract class Renderer {
   router: Router
   options: { [key: string]: any }
-  private temporary: HTMLElement[]
-  private replaced: {
+  protected temporary: HTMLElement[]
+  protected replaced: {
     original: HTMLElement,
     replacement: HTMLElement
   }[]
@@ -27,13 +26,13 @@ export class Renderer {
     this.replaced = []
   }
 
-  private currentId (): string {
+  protected currentId (): string {
     const exception = new Error('null request')
     const req = this.router.currentRequest(exception)!
     return req.prefix || '' + req.id
   }
 
-  private currentFragment (): HTMLElement | null {
+  protected currentFragment (): HTMLElement | null {
     const id = this.currentId()
     return document.getElementById(id)
   }
@@ -48,7 +47,26 @@ export class Renderer {
     }
   }
 
-  write (element: HTMLElement) {
+  abstract render (element: HTMLElement): void;
+
+  renderContent (content: any) {
+    this.render(defaultDiv(this.currentId(), content.toString()))
+  }
+
+  // TODO renderHtml
+}
+
+export class DomAppender extends Renderer {
+  render (element: HTMLElement) {
+    this.restore()
+    element.id = this.currentId()
+    this.options.container.appendChild(element)
+  }
+}
+
+export class DomWriter extends Renderer {
+  render (element: HTMLElement) {
+    this.restore()
     element.id = this.currentId()
     const fragment = this.currentFragment()
     if (fragment) {
@@ -60,41 +78,6 @@ export class Renderer {
     } else {
       this.options.container.appendChild(element)
       this.temporary.push(element)
-    }
-  }
-
-  append (element: HTMLElement) {
-    element.id = this.currentId()
-    this.options.container.appendChild(element)
-  }
-}
-
-export class DomAppender extends Renderer implements Plugin {
-  enter () {
-    this.restore()
-  }
-
-  exit () {
-    const req = this.router.currentRequest()!
-    if (req.result instanceof window.HTMLElement) {
-      this.append(req.result)
-    } else {
-      this.append(defaultDiv(req.id, req.result.toString()))
-    }
-  }
-}
-
-export class DomWriter extends Renderer implements Plugin {
-  enter () {
-    this.restore()
-  }
-
-  exit () {
-    const req = this.router.currentRequest()!
-    if (req.result instanceof window.HTMLElement) {
-      this.write(req.result)
-    } else {
-      this.write(defaultDiv(req.id, req.result.toString()))
     }
   }
 }
