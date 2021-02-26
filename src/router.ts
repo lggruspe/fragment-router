@@ -30,12 +30,14 @@ export class Router {
   routes: Array<Route>
   subrouters: Array<[string, Router]>
   stack: PluginStack
+  private deferred: Route
   private request: Request | null
   constructor () {
     this.routes = []
     this.subrouters = []
     this.request = null
     this.stack = new PluginStack()
+    this.deferred = []
   }
 
   currentRequest (exception?: any): Request | null {
@@ -77,6 +79,18 @@ export class Router {
     return true
   }
 
+  defer (filter: Filter) {
+    this.deferred.push(filter)
+  }
+
+  runDeferred () {
+    const req = this.currentRequest()!
+    for (const filter of this.deferred) {
+      filter(req)
+    }
+    this.deferred = []
+  }
+
   listen (prefix = '') {
     const prefixFilter = withPrefix(prefix)
     window.addEventListener('hashchange', () => {
@@ -90,6 +104,7 @@ export class Router {
           this.stack.enter()
           if (this.runRoute(route)) {
             this.stack.exit()
+            this.runDeferred()
             break
           }
         } catch (e) {
