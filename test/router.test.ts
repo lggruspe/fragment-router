@@ -1,4 +1,4 @@
-import { Router } from '../src/index'
+import { Router, hasPrefix } from '../src/index'
 import { mockDom, wait } from './utils'
 import * as assert from 'assert'
 
@@ -28,6 +28,38 @@ describe('Router', () => {
       window.location.hash = '#'
       await wait()
       assert.ok(true)
+    })
+  })
+
+  describe('listen', () => {
+    describe('with filters', () => {
+      describe('if a filter throws', () => {
+        it('should abort all routes', async () => {
+          const data: string[] = []
+          const router = new Router()
+          router.route(() => data.push('bar'))
+          router.route(() => data.push('baz'))
+          router.listen(req => {
+            if (!hasPrefix('foo/')(req)) {
+              throw new Error()
+            }
+          })
+
+          window.location.hash = '#'
+          await wait()
+          assert.deepStrictEqual(data, [])
+          window.location.hash = '#bar'
+          await wait()
+          assert.deepStrictEqual(data, [])
+          window.location.hash = '#baz'
+          await wait()
+          assert.deepStrictEqual(data, [])
+
+          window.location.hash = '#foo/'
+          await wait()
+          assert.deepStrictEqual(data, ['bar'])
+        })
+      })
     })
   })
 })

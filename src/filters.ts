@@ -32,15 +32,14 @@ export function matches (pattern: RegExp) {
   }
 }
 
-export function withPrefix (prefix: string) {
+export function hasPrefix (prefix: string) {
   return (req: Request) => {
-    if (!prefix) return req
+    if (!prefix) return true
     if (req.id.startsWith(prefix)) {
       req.id = req.id.slice(prefix.length)
       req.prefix = req.prefix || '' + prefix
-      return req
-    } else {
-      return undefined
+      return true
     }
+    return false
   }
 }

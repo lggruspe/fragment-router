@@ -1,4 +1,4 @@
-import { createRequest, Router, equals, check, isHome, matches, withPrefix } from '../src/index'
+import { createRequest, Router, equals, check, isHome, matches, hasPrefix } from '../src/index'
 import { wait, compare, mockDom } from './utils'
 import * as assert from 'assert'
 
@@ -165,7 +165,7 @@ describe('matches', () => {
   })
 })
 
-describe('withPrefix', () => {
+describe('hasPrefix', () => {
   beforeEach(mockDom)
 
   describe('with non-empty prefix', () => {
@@ -174,7 +174,8 @@ describe('withPrefix', () => {
       const expected = createRequest('bar')
       expected.prefix = 'foo/'
 
-      const actual = withPrefix('foo/')(createRequest('foo/bar'))
+      const actual = createRequest('foo/bar')
+      hasPrefix('foo/')(actual)
       await wait()
       assert.deepStrictEqual(expected, actual)
     })
@@ -188,14 +189,14 @@ describe('withPrefix', () => {
       const actual = createRequest('test')
       actual.prefix = ''
 
-      withPrefix('')(actual)
+      hasPrefix('')(actual)
       assert.deepStrictEqual(expected, actual)
     })
   })
 
   describe('when prefix does not match id in req', () => {
     it('should not return anything', () => {
-      assert.ok(!withPrefix('foo')(createRequest('')))
+      assert.ok(!hasPrefix('foo')(createRequest('')))
     })
   })
 })

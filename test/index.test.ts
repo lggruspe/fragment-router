@@ -1,4 +1,4 @@
-import { Request, Router } from '../src/index'
+import { Request, Router, check, hasPrefix } from '../src/index'
 import { wait, compare, mockDom } from './utils'
 import * as assert from 'assert'
 
@@ -232,13 +232,13 @@ describe('Router', () => {
             data.push('foo')
             throw req.control.abort
           })
-          .listen('foo/')
+          .listen(check(hasPrefix('foo/')))
         new Router()
           .route(req => {
             data.push('bar')
             throw req.control.abort
           })
-          .listen('bar/')
+          .listen(check(hasPrefix('bar/')))
 
         window.location.hash = '#foo'
         window.location.hash = '#bar'
@@ -277,7 +277,7 @@ describe('Router', () => {
 
         bar.mount('baz/', baz)
         foo.mount('bar/', bar)
-        foo.listen('foo/')
+        foo.listen(check(hasPrefix('foo/')))
 
         window.location.hash = '#baz/'
         await compare(data, [])

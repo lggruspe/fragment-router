@@ -1,4 +1,4 @@
-import { withPrefix } from './filters'
+import { check, hasPrefix } from './filters'
 
 class AbortRoute {}
 class AbortAll {}
@@ -88,13 +88,16 @@ export class Router {
     this.deferred = []
   }
 
-  listen (prefix = '') {
-    const prefixFilter = withPrefix(prefix)
+  listen (...filters: Filter[]) {
     window.addEventListener('hashchange', () => {
       for (const route of this.routes) {
         const req = createRequest(window.location.hash.slice(1))
         this.request = req
-        if (!prefixFilter(req)) {
+        try {
+          for (const filter of filters) {
+            filter(req)
+          }
+        } catch (e) {
           break
         }
         try {
@@ -111,7 +114,7 @@ export class Router {
       this.request = null
     })
     for (const [infix, subrouter] of this.subrouters) {
-      subrouter.listen(prefix + infix)
+      subrouter.listen(...filters, check(hasPrefix(infix)))
     }
     return this
   }
