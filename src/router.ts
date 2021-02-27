@@ -81,11 +81,17 @@ export class Router {
   }
 
   runDeferred () {
+    // Converts all exceptions into AbortAll
     const req = this.currentRequest()!
-    for (const filter of this.deferred) {
-      filter(req)
+    try {
+      for (const filter of this.deferred) {
+        filter(req)
+      }
+    } catch (e) {
+      throw req.control.abort
+    } finally {
+      this.deferred = []
     }
-    this.deferred = []
   }
 
   listen (...filters: Filter[]) {

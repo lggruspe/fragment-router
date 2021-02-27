@@ -1,5 +1,5 @@
 import { Router, hasPrefix } from '../src/index'
-import { mockDom, wait } from './utils'
+import { compare, mockDom, wait } from './utils'
 import * as assert from 'assert'
 
 describe('Router', () => {
@@ -32,7 +32,39 @@ describe('Router', () => {
   })
 
   describe('listen', () => {
-    describe('with filters', () => {
+    describe('with deferred filters', () => {
+      it('should run deferred filters after regular filters', async () => {
+        const data: string[] = []
+        const router = new Router()
+        router.route(
+          () => {
+            router.defer(() => data.push('bar'))
+          },
+          () => data.push('foo')
+        )
+        router.listen()
+        window.location.hash = '#'
+        await compare(data, ['foo', 'bar'])
+      })
+
+      describe('if a filter throws', () => {
+        it('should convert the exception into req.control.abort (even req.control.next)', async () => {
+          const data: string[] = []
+          const router = new Router()
+          router.route(
+            req => router.defer(() => {
+              throw req.control.next
+            })
+          )
+          router.route(() => data.push('foo'))
+          router.listen()
+          window.location.hash = '#'
+          await compare(data, [])
+        })
+      })
+    })
+
+    describe('with listen filters', () => {
       describe('if a filter throws', () => {
         it('should abort all routes', async () => {
           const data: string[] = []
