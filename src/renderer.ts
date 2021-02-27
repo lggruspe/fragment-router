@@ -34,7 +34,7 @@ abstract class Renderer {
 
   protected currentFragment (): HTMLElement | null {
     const id = this.currentId()
-    return document.getElementById(id)
+    return id ? document.getElementById(id) : null
   }
 
   protected restore () {

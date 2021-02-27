@@ -17,6 +17,40 @@ describe('DomWriter', () => {
     })
   })
 
+  describe('renderContent', () => {
+    describe('when req.id is empty', () => {
+      it('id of created element should be empty', async () => {
+        document.body.innerHTML = ''
+        const router = new Router()
+        const writer = new DomWriter(router)
+        router.route(() => router.defer(() => writer.renderContent('test')))
+        router.listen()
+
+        window.location.hash = '#'
+        await wait()
+        assert.strictEqual(document.body.children.length, 1)
+        assert.strictEqual(document.body.firstElementChild!.id, '')
+        assert.strictEqual(document.body.firstElementChild!.textContent, 'test')
+      })
+    })
+
+    describe('when req.id is non-empty', () => {
+      it('id of created element should not be empty', async () => {
+        document.body.innerHTML = ''
+        const router = new Router()
+        const writer = new DomWriter(router)
+        router.route(() => router.defer(() => writer.renderContent('test')))
+        router.listen()
+
+        window.location.hash = '#foo'
+        await wait()
+        assert.strictEqual(document.body.children.length, 1)
+        assert.strictEqual(document.body.firstElementChild!.id, 'foo')
+        assert.strictEqual(document.body.firstElementChild!.textContent, 'test')
+      })
+    })
+  })
+
   describe('restore', () => {
     describe('when request ID is the same as the ID of an existing fragment', () => {
       it('should save and restore existing fragment after switching to another hash', async () => {
