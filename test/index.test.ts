@@ -269,7 +269,7 @@ describe('Router', () => {
         })
       })
 
-      it('should run all handlers with the appropriate prefix', async () => {
+      it('should not run parent route (outside prefix)', async () => {
         const data: Array<string> = []
         const baz = new Router().route(() => data.push('baz'))
         const bar = new Router().route(() => data.push('bar'))
@@ -287,11 +287,11 @@ describe('Router', () => {
         await compare(data, ['foo'])
 
         window.location.hash = '#foo/bar/'
-        await compare(data, ['foo', 'foo', 'bar'])
+        await compare(data, ['foo', 'bar'])
         window.location.hash = '#foo/bar/baz'
-        await compare(data, ['foo', 'foo', 'bar', 'foo', 'bar'])
+        await compare(data, ['foo', 'bar', 'bar'])
         window.location.hash = '#foo/bar/baz/'
-        await compare(data, ['foo', 'foo', 'bar', 'foo', 'bar', 'foo', 'bar', 'baz'])
+        await compare(data, ['foo', 'bar', 'bar', 'baz'])
       })
     })
   })

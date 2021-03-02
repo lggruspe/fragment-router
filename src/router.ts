@@ -94,34 +94,41 @@ export class Router {
     }
   }
 
-  listen (...filters: Filter[]) {
-    window.addEventListener('hashchange', () => {
-      for (const route of this.routes) {
-        const req = createRequest(window.location.hash.slice(1))
-        this.request = req
-        try {
-          for (const filter of filters) {
-            filter(req)
-          }
-        } catch (e) {
+  run (...filters: Filter[]): boolean {
+    for (const [infix, subrouter] of this.subrouters) {
+      const ok = subrouter.run(...filters, check(hasPrefix(infix)))
+      if (ok) return true
+    }
+
+    let ok = false
+    for (const route of this.routes) {
+      const req = createRequest(window.location.hash.slice(1))
+      this.request = req
+      try {
+        for (const filter of filters) {
+          filter(req)
+        }
+      } catch (e) {
+        break
+      }
+      try {
+        if (this.runRoute(route)) {
+          this.runDeferred()
+          ok = true
           break
         }
-        try {
-          if (this.runRoute(route)) {
-            this.runDeferred()
-            break
-          }
-        } catch (e) {
-          if (e instanceof AbortAll) {
-            break
-          }
+      } catch (e) {
+        if (e instanceof AbortAll) {
+          break
         }
       }
-      this.request = null
-    })
-    for (const [infix, subrouter] of this.subrouters) {
-      subrouter.listen(...filters, check(hasPrefix(infix)))
     }
+    this.request = null
+    return ok
+  }
+
+  listen (...filters: Filter[]) {
+    window.addEventListener('hashchange', () => this.run(...filters))
     return this
   }
 }
