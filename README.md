@@ -44,4 +44,4 @@ See `examples/`.
 License
 -------
 
-MIT
+[MIT](./LICENSE)

@@ -30,11 +30,13 @@ export class Router {
   subrouters: Array<[string, Router]>
   private deferred: Route
   private request: Request | null
+  private exitHandlers: Array<() => void>
   constructor () {
     this.routes = []
     this.subrouters = []
     this.request = null
     this.deferred = []
+    this.exitHandlers = []
   }
 
   currentRequest (exception?: any): Request | null {
@@ -80,7 +82,11 @@ export class Router {
     this.deferred.push(filter)
   }
 
-  runDeferred () {
+  onExit (...handlers: Array<() => void>) {
+    this.exitHandlers.push(...handlers)
+  }
+
+  private runDeferred () {
     // Converts all exceptions into AbortAll
     const req = this.currentRequest()!
     try {
@@ -94,7 +100,15 @@ export class Router {
     }
   }
 
+  private runExitHandlers () {
+    for (const handler of this.exitHandlers) {
+      handler()
+    }
+    this.exitHandlers = []
+  }
+
   run (...filters: Filter[]): boolean {
+    this.runExitHandlers()
     for (const [infix, subrouter] of this.subrouters) {
       const ok = subrouter.run(...filters, check(hasPrefix(infix)))
       if (ok) return true

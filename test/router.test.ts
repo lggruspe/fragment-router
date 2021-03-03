@@ -1,9 +1,58 @@
-import { Router, hasPrefix } from '../src/index'
+import { check, Router, hasPrefix } from '../src/index'
 import { compare, mockDom, wait } from './utils'
 import * as assert from 'assert'
 
 describe('Router', () => {
   beforeEach(mockDom)
+
+  describe('with exit handlers', () => {
+    it('should run exit handlers on next request (even if the request does not match)', async () => {
+      const data: string[] = []
+      const router = new Router()
+      router.route(() => {
+        router.defer(() => data.push('foo'))
+        router.onExit(() => {
+          while (data.length) data.pop()
+        })
+      })
+      router.listen(check(hasPrefix('foo/')))
+
+      window.location.hash = '#foo'
+      await compare(data, [])
+
+      window.location.hash = '#foo/'
+      await compare(data, ['foo'])
+
+      window.location.hash = '#'
+      await compare(data, [])
+    })
+
+    it('should clear exit handlers after running them', async () => {
+      const data: string[] = []
+      const router = new Router()
+      router.route(
+        check(hasPrefix('foo')),
+        () => router.onExit(() => data.push('foo'))
+      )
+      router.route(
+        check(hasPrefix('bar')),
+        () => router.onExit(() => data.push('bar'))
+      )
+      router.listen()
+
+      window.location.hash = '#foo'
+      await compare(data, [])
+
+      window.location.hash = '#bar'
+      await compare(data, ['foo'])
+
+      window.location.hash = '#'
+      await compare(data, ['foo', 'bar'])
+
+      window.location.hash = '#bar'
+      await compare(data, ['foo', 'bar'])
+    })
+  })
 
   describe('when entire route finishes without breaking', () => {
     it('should not run other routes', async () => {
