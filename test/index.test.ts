@@ -65,7 +65,6 @@ describe('Router', () => {
     it('should be null between routes', async () => {
       const router = new Router()
       router.route(() => {}).listen()
-      window.location.hash = '#'
       await wait()
       assert.strictEqual(router.currentRequest(), null)
     })
@@ -143,8 +142,7 @@ describe('Router', () => {
           req => data.push(req)
         )
         .listen()
-      window.location.hash = '#'
-      await wait()
+      await wait() // wait for page to load
       assert.strictEqual(data.length, 2)
       assert.deepStrictEqual(data[0], data[1])
     })
@@ -157,8 +155,6 @@ describe('Router', () => {
 
       const data: Array<any> = []
       new Router().route(filter).route(filter).listen()
-      window.location.hash = '#'
-
       await wait()
       assert.strictEqual(data.length, 2)
       assert.notEqual(data[0], data[1])
@@ -176,8 +172,9 @@ describe('Router', () => {
             () => data.push(2)
           )
           .listen()
+        await compare(data, [0, 1]) // initial page load
         window.location.hash = '#'
-        await compare(data, [0, 1])
+        await compare(data, [0, 1, 0, 1])
       })
     })
 
@@ -197,8 +194,9 @@ describe('Router', () => {
             () => data.push(3)
           )
           .listen()
+        await compare(data, [0, 2, 3]) // initial page load
         window.location.hash = '#'
-        await compare(data, [0, 2, 3])
+        await compare(data, [0, 2, 3, 0, 2, 3])
       })
     })
 
@@ -219,8 +217,9 @@ describe('Router', () => {
             () => data.push(4)
           )
           .listen()
+        await compare(data, [0, 1]) // initial page load
         window.location.hash = '#'
-        await compare(data, [0, 1])
+        await compare(data, [0, 1, 0, 1])
       })
     })
 

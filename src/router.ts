@@ -142,7 +142,9 @@ export class Router {
   }
 
   listen (...filters: Filter[]) {
-    window.addEventListener('hashchange', () => this.run(...filters))
+    const listener = () => this.run(...filters)
+    window.addEventListener('load', listener)
+    window.addEventListener('hashchange', listener)
     return this
   }
 }

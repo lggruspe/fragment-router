@@ -40,6 +40,8 @@ describe('Router', () => {
       )
       router.listen()
 
+      await compare(data, [])
+
       window.location.hash = '#foo'
       await compare(data, [])
 
@@ -62,9 +64,10 @@ describe('Router', () => {
         .route(() => data.push('no'))
         .listen()
 
+      await compare(data, ['yes']) // initial page load
       window.location.hash = '#'
       await wait()
-      assert.deepStrictEqual(data, ['yes'])
+      assert.deepStrictEqual(data, ['yes', 'yes'])
     })
   })
 
@@ -92,8 +95,9 @@ describe('Router', () => {
           () => data.push('foo')
         )
         router.listen()
+        await compare(data, ['foo', 'bar']) // initial page load
         window.location.hash = '#'
-        await compare(data, ['foo', 'bar'])
+        await compare(data, ['foo', 'bar', 'foo', 'bar'])
       })
 
       describe('if a filter throws', () => {
@@ -141,6 +145,17 @@ describe('Router', () => {
           assert.deepStrictEqual(data, ['bar'])
         })
       })
+    })
+
+    it('should run when page loads', async () => {
+      const data: string[] = []
+      const router = new Router()
+      router.route(() => {
+        data.push('foo')
+      })
+      router.listen()
+
+      await compare(data, ['foo'])
     })
   })
 })

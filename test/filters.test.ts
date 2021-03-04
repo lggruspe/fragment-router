@@ -17,17 +17,18 @@ describe('isHome', () => {
       })
       .listen()
 
+    await compare(data, ['foo']) // initial page load
     window.location.hash = '#'
-    await compare(data, ['foo'])
+    await compare(data, ['foo', 'foo'])
 
     window.location.hash = '#foo'
-    await compare(data, ['foo', 'bar'])
+    await compare(data, ['foo', 'foo', 'bar'])
 
     window.location.hash = '#bar'
-    await compare(data, ['foo', 'bar', 'bar'])
+    await compare(data, ['foo', 'foo', 'bar', 'bar'])
 
     window.location.hash = '#baz'
-    await compare(data, ['foo', 'bar', 'bar', 'bar'])
+    await compare(data, ['foo', 'foo', 'bar', 'bar', 'bar'])
   })
 })
 
@@ -41,6 +42,7 @@ describe('equals', () => {
           () => data.push('bar')
         )
         .listen()
+      await compare(data, []) // initial page load
       window.location.hash = '#foo'
       await compare(data, ['foo', 'bar'])
     })
@@ -54,8 +56,9 @@ describe('equals', () => {
         .route(() => data.push('bar'))
         .listen()
 
+      await compare(data, ['bar']) // initial page load
       window.location.hash = '#bar'
-      await compare(data, ['bar'])
+      await compare(data, ['bar', 'bar'])
     })
   })
 })
@@ -71,6 +74,7 @@ describe('matches', () => {
         )
         .listen()
 
+      await compare(data, []) // initial page load
       window.location.hash = '#bar'
       await compare(data, ['foo', 'bar'])
 
@@ -87,8 +91,9 @@ describe('matches', () => {
         .route(() => data.push('bar'))
         .listen()
 
+      await compare(data, ['bar']) // initial page load
       window.location.hash = '#foo'
-      await compare(data, ['bar'])
+      await compare(data, ['bar', 'bar'])
     })
   })
 
