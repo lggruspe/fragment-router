@@ -49,6 +49,35 @@ describe('DomWriter', () => {
         assert.strictEqual(document.body.firstElementChild!.textContent, 'test')
       })
     })
+
+    describe('when there is an existing fragment with the same ID as request', () => {
+      describe('outside the container', () => {
+        it('should not mess with the existing fragment', async () => {
+          document.body.innerHTML = `
+            <div id="foo">No!</div>
+            <div class="container">
+              <div id="foo"></div>
+            </div>
+          `
+          const router = new Router()
+          const writer = new DomWriter(router, {
+            container: document.querySelector('.container')
+          })
+          router.route(() => router.defer(() => writer.renderContent('test')))
+          router.listen()
+
+          window.location.hash = '#foo'
+          await wait()
+          assert.strictEqual(document.getElementById('foo')!.textContent, 'No!')
+
+          const foo = document.querySelector('.container div')
+          assert.ok(foo!)
+          assert.strictEqual(foo.tagName, 'DIV')
+          assert.strictEqual(foo.id, 'foo')
+          assert.strictEqual(foo.textContent, 'test')
+        })
+      })
+    })
   })
 
   describe('restore', () => {
