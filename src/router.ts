@@ -101,16 +101,18 @@ export class Router {
   }
 
   private runExitHandlers () {
+    for (const subrouter of this.subrouters) {
+      subrouter[1].runExitHandlers()
+    }
     for (const handler of this.exitHandlers) {
       handler()
     }
     this.exitHandlers = []
   }
 
-  run (...filters: Filter[]): boolean {
-    this.runExitHandlers()
+  private runRoutes (...filters: Filter[]): boolean {
     for (const [infix, subrouter] of this.subrouters) {
-      const ok = subrouter.run(...filters, check(hasPrefix(infix)))
+      const ok = subrouter.runRoutes(...filters, check(hasPrefix(infix)))
       if (ok) return true
     }
 
@@ -139,6 +141,11 @@ export class Router {
     }
     this.request = null
     return ok
+  }
+
+  run (...filters: Filter[]): boolean {
+    this.runExitHandlers()
+    return this.runRoutes(...filters)
   }
 
   listen (...filters: Filter[]) {

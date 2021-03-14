@@ -6,6 +6,23 @@ describe('Router', () => {
   beforeEach(mockDom)
 
   describe('with exit handlers', () => {
+    describe('if subrouters have exit handlers', () => {
+      it('all exit handlers should be run on the next request even if fragment prefix does not match', async () => {
+        const data: string[] = []
+        const fooRouter = new Router()
+        const barRouter = new Router()
+        const bazRouter = new Router()
+        fooRouter.mount('bar', barRouter)
+        fooRouter.mount('baz', bazRouter)
+        barRouter.onExit(() => data.push('bar'))
+        bazRouter.onExit(() => data.push('baz'))
+        fooRouter.listen()
+
+        window.location.hash = '#baz'
+        await compare(data, ['bar', 'baz'])
+      })
+    })
+
     it('should run exit handlers on next request (even if the request does not match)', async () => {
       const data: string[] = []
       const router = new Router()
