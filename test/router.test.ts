@@ -174,5 +174,20 @@ describe('Router', () => {
 
       await compare(data, ['foo'])
     })
+
+    it('should run when "fragment-router" event gets dispatched', async () => {
+      let counter = 0
+
+      const router = new Router()
+      router.route(() => counter++)
+      router.listen()
+
+      await wait()
+      assert.strictEqual(counter, 1)
+
+      window.dispatchEvent(new window.CustomEvent('fragment-router', {}))
+      await wait()
+      assert.strictEqual(counter, 2)
+    })
   })
 })

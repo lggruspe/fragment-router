@@ -152,6 +152,7 @@ export class Router {
     const listener = () => this.run(...filters)
     window.addEventListener('load', listener)
     window.addEventListener('hashchange', listener)
+    window.addEventListener('fragment-router', listener)
     return this
   }
 }
